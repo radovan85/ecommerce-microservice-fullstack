@@ -1,0 +1,34 @@
+<div class="container">
+  <div class="main-header">
+    <h1>Product List</h1>
+  </div>
+
+  <ng-container *ngIf="getHasAuthorityAdmin()">
+    <button class="add-product-btn" routerLink="/products/addProduct">Add Product</button>
+  </ng-container>
+
+  <div class="card-container">
+    <ng-template ngFor let-tempProduct [ngForOf]="getPaginatedProducts()">
+      
+      <div class="card">
+        <img [src]="getProductImage(tempProduct)"
+          alt="Product Image">
+        <div class="product-info">
+          <h2 class="product-name" [innerHTML]="tempProduct.productName"></h2>
+          <p class="product-price" [innerHTML]="'€' + tempProduct.productPrice?.toFixed(2)"></p>
+          <div class="button-container">
+            <button [routerLink]="[`/products/productDetails/`, tempProduct.productId]">Details</button>
+            <ng-container *ngIf="getHasAuthorityUser()">
+              <button>Order</button>
+            </ng-container>
+          </div>
+        </div>
+      </div>
+    </ng-template>
+  </div>
+  <div class="pagination" *ngIf="getAllProducts().length > 0">
+    <button (click)="prevPage()" [disabled]="getCurrentPage() == 1">Previous</button>
+    <span>Page {{ getCurrentPage() }} / {{ getTotalPages() }}</span>
+    <button (click)="nextPage()" [disabled]="getCurrentPage() == getTotalPages()">Next</button>
+  </div>
+</div>

@@ -1,0 +1,14 @@
+# Routes
+
+#order routes
+GET    /api/order/provideMyAddress             com.radovan.play.controllers.OrderController.provideMyAddress(request:Request)
+GET    /api/order/allAddresses                 com.radovan.play.controllers.OrderController.getAllAddresses
+PUT    /api/order/confirmShippingAddress       com.radovan.play.controllers.OrderController.confirmShipping(request:Request)
+POST   /api/order                   com.radovan.play.controllers.OrderController.placeOrder(request:Request)
+GET    /api/order                    com.radovan.play.controllers.OrderController.getAllOrders
+GET    /api/order/:id             com.radovan.play.controllers.OrderController.getOrderDetails(id:Integer)
+GET    /api/order/allItems/:id                 com.radovan.play.controllers.OrderController.getAllItems(id:Integer)
+DELETE /api/order/:id              com.radovan.play.controllers.OrderController.deleteOrder(id:Integer)
+
+#Health
+GET     /api/health     com.radovan.play.controllers.HealthController.healthCheck(request:Request)

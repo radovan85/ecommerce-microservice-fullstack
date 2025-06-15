@@ -1,0 +1,60 @@
+/* Reset default margin and padding */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Apply font-family and margin-top */
+.container {
+    margin-top: 125px;
+    font-family: 'Oswald', sans-serif;
+    margin-left: 100px;
+}
+
+/* Style the list with squares */
+ul {
+    list-style-type: square;
+}
+
+/* Remove centering of the list */
+ul.centered {
+    display: flex;
+    flex-direction: column;
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    color: #025ac4;
+
+}
+
+ul.centered li{
+    margin-top: 5px;
+}
+
+/* Add transition effect on hover */
+a {
+    transition: 0.3s;
+    margin-right: 10px;
+    /* Add 10px margin to the right */
+    margin-top: 10px;
+    /* Add 10px margin to the top */
+}
+
+a:hover {
+    cursor: pointer;
+    background-color: rgb(134, 132, 132);
+}
+
+/* Add margin-bottom to h2 with class 'Administrator Panel' */
+h2 {
+    margin-bottom: 30px;
+}
+
+/* Responsive adjustments */
+@media screen and (max-width: 600px) {
+    .container {
+        margin-top: 50px;
+        margin-left: 20px;
+        /* Adjust left margin for smaller screens */
+    }
+}

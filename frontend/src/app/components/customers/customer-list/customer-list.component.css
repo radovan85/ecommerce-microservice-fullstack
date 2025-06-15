@@ -1,0 +1,110 @@
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f4f4f4;
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    width: 90%;
+    margin: auto;
+    overflow: hidden;
+    margin-bottom: 100px;
+    margin-top: 125px;
+    font-family: 'Oswald', serif;
+}
+
+table {
+    width: 100%;
+    margin-top: 20px;
+    border-collapse: collapse;
+}
+
+table,
+th,
+td {
+    border: 1px solid #ddd;
+}
+
+th,
+td {
+    padding: 10px;
+    text-align: center;
+    vertical-align: middle;
+}
+
+th {
+    background-color: #007bff;
+    /* Changed to blue */
+    color: white;
+}
+
+tr:nth-child(even) {
+    background-color: #f2f2f2;
+}
+
+tr:hover {
+    background-color: #ddd;
+}
+
+.pagination {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    margin-top: 20px;
+    padding-right: 20px;
+}
+
+.pagination button {
+    background-color: #007bff;
+    /* Changed to blue */
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    margin-left: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.pagination button:hover {
+    background-color: #0056b3;
+    /* Darker blue on hover */
+}
+
+.btn-details {
+    padding: 10px 20px;
+    background: #28a745;
+    /* Changed to a green color for contrast */
+    color: white;
+    text-decoration: none;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-details:hover {
+    background: #218838;
+    /* Darker green on hover */
+}
+
+@media(max-width: 580px) {
+
+    header #branding,
+    header nav {
+        float: none;
+        text-align: center;
+        width: 100%;
+    }
+
+    header nav ul {
+        margin-top: 0;
+    }
+
+    header li {
+        float: none;
+        display: block;
+        padding: 10px;
+    }
+}

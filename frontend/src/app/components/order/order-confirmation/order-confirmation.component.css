@@ -1,0 +1,121 @@
+body {
+    background-color: #f4f4f4;
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    max-width: 1200px;
+    margin: auto;
+    padding: 20px;
+    margin-top: 125px;
+    margin-bottom: 100px;
+    font-family: 'Oswald', serif;
+}
+
+.receipt-heading {
+    text-align: center;
+    color: #333;
+}
+
+.receipt-heading h1 {
+    margin-bottom: 50px;
+}
+
+.address,
+.order-details {
+    background-color: #fff;
+    border-radius: 5px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.address {
+    color: #333;
+}
+
+.order-details {
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.order-details table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.order-details th,
+.order-details td {
+    text-align: left;
+    padding: 15px;
+    border-bottom: 1px solid #ddd;
+}
+
+.order-details th {
+    background-color: #f8f8f8;
+}
+
+.total-price {
+    text-align: right;
+    margin-top: 20px;
+}
+
+.total-price h3 {
+    color: #333;
+}
+
+.buttons {
+    text-align: center;
+    margin-top: 30px;
+}
+
+.button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-right: 10px;
+}
+
+.btn-grey {
+    background-color: #ccc;
+    color: #333;
+}
+
+.btn-red {
+    background-color: #e74c3c;
+    color: #fff;
+}
+
+.btn-blue {
+    background-color: #3498db;
+    color: #fff;
+}
+
+.button:hover {
+    opacity: 0.8;
+    transform: scale(1.05);
+    transition: all 0.3s ease;
+}
+
+.btn-grey:hover {
+    background-color: #b3b3b3;
+}
+
+.btn-red:hover {
+    background-color: #c0392b;
+}
+
+.btn-blue:hover {
+    background-color: #2980b9;
+}
+
+
+@media (max-width: 768px) {
+
+    .address,
+    .order-details,
+    .total-price,
+    .buttons {
+        padding: 10px;
+    }
+}

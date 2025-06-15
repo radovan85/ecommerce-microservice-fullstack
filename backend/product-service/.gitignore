@@ -1,0 +1,58 @@
+# SBT specific
+target/
+lib_managed/
+src_managed/
+project/target/
+project/project/
+.history
+.cache
+.lib/
+
+# Play specific
+logs/
+dist/
+tmp/
+public/
+
+# IDE-specific (Eclipse, IntelliJ, VS Code)
+.eclipse/
+.classpath
+.project
+.settings/
+.idea/
+*.iws
+*.iml
+*.ipr
+.vscode/
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# Environment variables
+.env
+
+# Build artifacts
+out/
+bin/
+
+# Maven/Gradle specific
+*.jar
+*.war
+*.ear
+.gradle/
+build/
+**/target/
+**/bin/
+
+# Database files (ako aplikacija koristi lokalnu bazu)
+database/*.db
+*.sqlite
+
+# Debugging logs
+*.log
+*.pid
+*.trace
+
+# Dependency files
+node_modules/

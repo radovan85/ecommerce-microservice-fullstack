@@ -1,0 +1,19 @@
+<div class="container">
+  <div class="image-slider">
+    <!-- Navigation Arrows -->
+    <div class="arrow left" (click)="moveSlide('prev')">
+    </div>
+    <div class="arrow right" (click)="moveSlide('next')">></div>
+
+    <!-- Slides -->
+    <div class="slide" *ngFor="let image of images; let i = index" [class.active]="i === currentIndex">
+      <img [src]="image.src" [alt]="image.alt">
+    </div>
+
+    <!-- Dots Indicator -->
+    <div class="dots">
+      <span class="dot" *ngFor="let image of images; let i = index" (click)="currentSlide(i)"
+        [class.active]="i === currentIndex"></span>
+    </div>
+  </div>
+</div>
