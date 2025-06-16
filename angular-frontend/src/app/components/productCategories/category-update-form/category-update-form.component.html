@@ -1,0 +1,9 @@
+<div class="container">
+    <h1>Category Update Form</h1>
+    <form id="categoryForm">
+        <label for="categoryName">Category Name:</label>
+        <input type="text" id="categoryName" name="categoryName" value="{{ getCategory().name }}">
+        <span id="categoryNameError" class="error-message" [innerHTML]="'Not empty!Maximum 40 letters allowed!'"></span>
+        <input type="submit" value="Update">
+    </form>
+</div>

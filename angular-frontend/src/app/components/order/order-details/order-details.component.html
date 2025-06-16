@@ -1,0 +1,48 @@
+<div class="container">
+    <div class="page-header">
+        <h1>Order</h1>
+        <p class="lead">Order, customer and product list</p>
+    </div>
+
+    <section class="customer-data">
+        <span [innerHTML]="getUser().firstName + ' ' + getUser().lastName"></span><br>
+        <span [innerHTML]="getAddress().address"></span><br>
+        <span [innerHTML]="getAddress().city + ', ' + getAddress().state"></span><br>
+        <span [innerHTML]="getAddress().postcode"></span><br>
+        <span [innerHTML]="getAddress().country"></span><br><br>
+        <span [innerHTML]="'Order time: ' + getOrder().createTime"></span>
+    </section>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th>#</th>
+                <th>Price</th>
+                <th>Discount</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <ng-template ngFor let-tempItem [ngForOf]="getOrderedItems()">
+                <tr>
+                    <td [innerHTML]="tempItem.productName"></td>
+                    <td [innerHTML]="tempItem.quantity"></td>
+                    <td [innerHTML]="tempItem.productPrice"></td>
+                    <td [innerHTML]="tempItem.productDiscount"></td>
+                    <td [innerHTML]="tempItem.price"></td>
+                </tr>
+            </ng-template>
+        </tbody>
+    </table>
+
+    <section class="order-total">
+        <span [innerHTML]="'Order Price: €' + getOrderTotal().toFixed(2)"></span>
+    </section>
+
+    <div class="options-menu">
+        <button (click)="goBack()">Back</button>
+        <button (click)="deleteOrder(getOrder().orderId)">Delete</button>
+    </div>
+</div>

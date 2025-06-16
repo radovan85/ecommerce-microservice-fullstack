@@ -1,0 +1,20 @@
+<div class="container">
+    <div class="header">
+        <h3>Customer Phone Confirmation</h3>
+        <hr>
+    </div>
+    <form id="customerForm">
+        <div class="form-group">
+            <label for="customerPhone">Phone</label>
+            <input type="text" id="customerPhone" name="customerPhone" placeholder="Enter Phone Number"
+                class="form-control" [value]="getCustomer().customerPhone">
+            <span class="error" id="customerPhoneError"
+                [innerHTML]="'Minimum 9 and maximum 15 letters allowed!'"></span>
+        </div>
+        <div class="buttons">
+            <button type="button" class="button button-back" (click)="redirectAddressConfirmation()">Back</button>
+            <button type="button" class="button button-cancel" routerLink="/order/cancelled">Cancel</button>
+            <button type="submit" class="button button-continue">Continue</button>
+        </div>
+    </form>
+</div>

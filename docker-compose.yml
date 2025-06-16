@@ -1,0 +1,262 @@
+version: '3.8'
+
+services:
+  eureka-server:
+    build:
+      context: ./backend/eureka-server-app
+      dockerfile: Dockerfile
+    container_name: eureka-server
+    ports:
+      - "8761:8761"
+    networks:
+      - eureka-net
+      - ecommerce-network
+    environment:
+      - JAVA_OPTS=-Xms256m -Xmx512m
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:8761/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+
+
+
+
+  postgres:
+    image: postgres:15
+    container_name: ecommerce-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: "1111"
+      POSTGRES_DB: ecommerce-db
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ecommerce-db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ecommerce-network
+    restart: unless-stopped
+
+  nats:
+    image: nats:latest
+    container_name: nats
+    ports:
+      - "4222:4222"
+    networks:
+      - ecommerce-network
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    ports:
+      - "9090:9090"
+    networks:
+      - ecommerce-network
+      - monitoring
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    ports:
+      - "3000:3000"
+    networks:
+      - ecommerce-network
+      - monitoring
+    restart: unless-stopped
+
+  api-gateway:
+    build:
+      context: ./backend/api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_APPLICATION_NAME=api-gateway
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - JAVA_OPTS=-Xms256m -Xmx512m
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - ecommerce-network
+
+  auth-service:
+    build:
+      context: ./backend/auth-service
+      dockerfile: Dockerfile
+    container_name: auth-service
+    ports:
+      - "8081:8080"
+    environment:
+      - DB_URL=jdbc:postgresql://ecommerce-db:5432/ecommerce-db
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=1111
+      - SPRING_APPLICATION_NAME=auth-service
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - NATS_URL=nats://nats:4222
+      - JAVA_OPTS=-Xms256m -Xmx512m
+    networks:
+      - ecommerce-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      nats:
+        condition: service_started
+    restart: unless-stopped
+
+  customer-service:
+    build:
+      context: ./backend/customer-service
+      dockerfile: Dockerfile
+    container_name: customer-service
+    ports:
+      - "8083:8080"
+    environment:
+      - DB_URL=jdbc:postgresql://ecommerce-db:5432/ecommerce-db
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=1111
+      - SPRING_APPLICATION_NAME=customer-service
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - NATS_URL=nats://nats:4222
+      - JAVA_OPTS=-Xms256m -Xmx512m
+    networks:
+      - ecommerce-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      nats:
+        condition: service_started
+    restart: unless-stopped
+
+
+  cart-service:
+    build:
+      context: ./backend/cart-service
+      dockerfile: Dockerfile
+    container_name: cart-service
+    ports:
+      - "8082:8080"
+    environment:
+      - DB_URL=jdbc:postgresql://ecommerce-db:5432/ecommerce-db
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=1111
+      - SPRING_APPLICATION_NAME=cart-service
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - NATS_URL=nats://nats:4222
+      - JAVA_OPTS=-Xms256m -Xmx512m
+    networks:
+      - ecommerce-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      nats:
+        condition: service_started
+    restart: unless-stopped
+
+
+  order-service:
+    build:
+      context: ./backend/order-service
+      dockerfile: Dockerfile
+    container_name: order-service
+    ports:
+      - "9002:9000"
+    environment:
+      - DB_URL=jdbc:postgresql://ecommerce-db:5432/ecommerce-db
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=1111
+      - NATS_URL=nats://nats:4222
+      - SERVICE_NAME=order-service
+      - EUREKA_URL=http://eureka-server:8761/eureka
+      - PLAY_SECRET=NpbOJnFle1GUPvnFVPwLkrOgrD`a^R2xO6U<D@:Q>@vcDD<[j9c4yZr^w6Hz`yqo
+      - PLAY_SERVER_HTTP_PORT=9000
+    networks:
+      - ecommerce-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_started
+      eureka-server:
+        condition: service_healthy
+    restart: unless-stopped
+
+
+  product-service:
+    build:
+      context: ./backend/product-service
+      dockerfile: Dockerfile
+    container_name: product-service
+    ports:
+      - "9001:9000"
+    environment:
+      - DB_URL=jdbc:postgresql://ecommerce-db:5432/ecommerce-db
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=1111
+      - NATS_URL=nats://nats:4222
+      - SERVICE_NAME=product-service
+      - EUREKA_URL=http://eureka-server:8761/eureka
+      - PLAY_SECRET=0oVEgv<v_[pJwSJf`x4u[54>y<fRP=q^M0j<bKJYI^5`Jh:hcpSF4C_[O`xo9/SC
+      - PLAY_SERVER_HTTP_PORT=9000
+    networks:
+      - ecommerce-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_started
+      eureka-server:
+        condition: service_healthy
+    restart: unless-stopped
+
+
+  angular-ecommerce:
+    build:
+      context: ./angular-frontend
+      dockerfile: Dockerfile
+    container_name: angular-ecommerce
+    ports:
+      - "4200:4200"
+    networks:
+      - ecommerce-network
+    depends_on:
+      - api-gateway
+    restart: unless-stopped
+
+
+
+
+
+volumes:
+  pg_data:
+  grafana-storage:
+
+networks:
+  eureka-net:
+    driver: bridge
+  ecommerce-network:
+    driver: bridge
+  monitoring:
+    driver: bridge

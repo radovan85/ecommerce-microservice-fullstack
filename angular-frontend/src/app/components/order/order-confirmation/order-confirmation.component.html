@@ -1,0 +1,48 @@
+<div class="container">
+    <div class="receipt-heading">
+        <h1>Receipt</h1>
+    </div>
+    <!-- Shipping and Billing Address -->
+    <div class="address">
+        <strong>Shipping Address</strong><br>
+        <span [innerHTML]="getAddress().address"></span><br>
+        <span [innerHTML]="getAddress().city"></span>, <span [innerHTML]="getAddress().state"></span><br>
+        <span [innerHTML]="getAddress().country"></span>, <span [innerHTML]="getAddress().postcode"></span>
+    </div>
+    <!-- Order Details -->
+    <div class="order-details">
+        <table>
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Quantity</th>
+                    <th>Price</th>
+                    <th>Discount</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                <ng-template ngFor let-tempItem [ngForOf]="getAllItems()">
+                    <tr>
+                        <td [innerHTML]="getProduct(tempItem.productId).productName">Product Name</td>
+                        <td [innerHTML]="tempItem.quantity"></td>
+                        <td [innerHTML]="'€' + getProduct(tempItem.productId).productPrice"></td>
+                        <td [innerHTML]="getProduct(tempItem.productId).discount + '%'"></td>
+                        <td [innerHTML]="'€' + tempItem.price"></td>
+                    </tr>
+                </ng-template>
+                <!-- Repeat for each product -->
+            </tbody>
+        </table>
+    </div>
+    <!-- Grand Total Price -->
+    <div class="total-price">
+        <h3>Grand Total Price: <span [innerHTML]="'€ ' + getCart().cartPrice?.toFixed(2)"></span></h3>
+    </div>
+    <!-- Buttons -->
+    <div class="buttons">
+        <button type="button" class="button btn-grey" (click)="redirectPhoneConfirmation()">Back</button>
+        <button type="button" class="button btn-red" routerLink="/order/cancelled">Cancel</button>
+        <button type="button" class="button btn-blue" (click)="placeOrder()">Continue</button>
+    </div>
+</div>

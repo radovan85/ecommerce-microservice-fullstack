@@ -1,0 +1,33 @@
+<div class="container">
+    <h1>List of Products Purchased</h1>
+    <table>
+        <tr>
+            <th>Product Id</th>
+            <th>Product Name</th>
+            <th>Quantity</th>
+            <th>Price</th>
+            <th></th>
+        </tr>
+
+        <!-- Add your product rows here -->
+
+        <!-- Example -->
+        <ng-template ngFor let-tempItem [ngForOf]="getAllItems()">
+            <tr>
+                <td [innerHTML]="tempItem.cartItemId"></td>
+                <td [innerHTML]="getProductName(tempItem.productId)"></td>
+                <td [innerHTML]="tempItem.quantity">1</td>
+                <td [innerHTML]="'€' + tempItem.price?.toFixed(2)"></td>
+                <td><button type="button" (click)="removeItem(tempItem.cartItemId)" [innerHTML]="'Remove'"></button></td>
+            </tr>
+        </ng-template>
+        <!-- Example -->
+
+    </table>
+
+    <button type="button" (click)="clearCart()">Clear Cart</button>
+    <button type="button" (click)="redirectCheckout()">Check Out</button>
+
+    <p class="total" [innerHTML]="'Cart Price: €' + getCart().cartPrice"> </p>
+
+</div>

@@ -1,0 +1,12 @@
+import { Component } from '@angular/core';
+import { RouterLink } from '@angular/router';
+
+@Component({
+  selector: 'app-order-completed',
+  imports: [RouterLink],
+  templateUrl: './order-completed.component.html',
+  styleUrl: './order-completed.component.css'
+})
+export class OrderCompletedComponent {
+
+}

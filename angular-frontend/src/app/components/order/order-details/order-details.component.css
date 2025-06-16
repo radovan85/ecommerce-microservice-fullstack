@@ -1,0 +1,130 @@
+/* General styles */
+body {
+    background-color: #f4f4f4;
+    margin: 0;
+    padding: 20px;
+}
+
+.container {
+    width: 80%;
+    margin: auto;
+    background-color: #fff;
+    padding: 20px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    margin-top: 125px;
+    margin-bottom: 100px;
+    font-family: 'Oswald', serif;
+    color: #2c0265;
+}
+
+
+
+/* Header styles */
+.page-header h1 {
+    margin: 0;
+    color: #333;
+}
+
+.lead {
+    color: #666;
+    font-size: 1.2em;
+}
+
+/* Customer data section */
+.customer-data {
+    background-color: #f9f9f9;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.customer-data span {
+    display: block;
+    margin-bottom: 5px;
+}
+
+/* Table styles */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+
+table,
+th,
+td {
+    border: 1px solid #ddd;
+}
+
+th {
+    background-color: #f2f2f2;
+    padding: 10px;
+    vertical-align: middle;
+    text-align: center;
+}
+
+td {
+    padding: 10px;
+    vertical-align: middle;
+    text-align: center;
+}
+
+/* Order total section */
+.order-total {
+    font-weight: bold;
+    text-align: right;
+    padding: 10px;
+}
+
+/* Options menu */
+.options-menu {
+    text-align: right;
+    margin-top: 20px;
+}
+
+button {
+    padding: 10px 20px;
+    margin-left: 10px;
+    background-color: #0273ac;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+button:hover {
+    opacity: 0.8;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+    .container {
+        width: 95%;
+        padding: 10px;
+    }
+
+    .options-menu {
+        text-align: center;
+    }
+
+    button {
+        margin: 10px 0;
+    }
+}
+
+@media (max-width: 480px) {
+
+    .page-header h1,
+    .lead {
+        text-align: center;
+    }
+
+    .customer-data,
+    .order-total {
+        text-align: center;
+    }
+
+    table,
+    th,
+    td {
+        font-size: 0.9em;
+    }
+}

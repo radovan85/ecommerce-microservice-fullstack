@@ -1,0 +1,114 @@
+body {
+    background-color: #f4f4f4;
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    max-width: 600px;
+    margin: 50px auto;
+    padding: 20px;
+    background-color: #fff;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    margin-top: 125px;
+    margin-bottom: 100px;
+    font-family: 'Oswald', serif;
+}
+
+.header {
+    text-align: center;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+}
+
+.header h3 {
+    margin: 0;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #007bff;
+}
+
+.form-group .error {
+    color: #d9534f;
+    font-size: 0.85em;
+    visibility: hidden;
+}
+
+
+
+.buttons {
+    text-align: center;
+    margin-top: 30px;
+}
+
+.button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1em;
+    transition: background-color 0.3s, color 0.3s;
+    /* Smooth transition for background and text color */
+}
+
+.button:hover {
+    opacity: 0.9;
+    /* Slightly lower opacity on hover */
+}
+
+.button-back {
+    background-color: #6c757d;
+    color: white;
+}
+
+.button-back:hover {
+    background-color: #5a6268;
+    /* Darker shade on hover */
+}
+
+.button-cancel {
+    background-color: #dc3545;
+    color: white;
+    margin-left: 10px;
+}
+
+.button-cancel:hover {
+    background-color: #c82333;
+    /* Darker shade on hover */
+}
+
+.button-continue {
+    background-color: #007bff;
+    color: white;
+    margin-left: 10px;
+}
+
+.button-continue:hover {
+    background-color: #0069d9;
+    /* Darker shade on hover */
+}
+
+@media (max-width: 768px) {
+    .container {
+        margin: 20px;
+        padding: 10px;
+    }
+}
