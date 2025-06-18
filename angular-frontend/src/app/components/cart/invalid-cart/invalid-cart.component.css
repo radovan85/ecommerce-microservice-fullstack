@@ -1,0 +1,59 @@
+body {
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+}
+
+.container {
+    max-width: 1200px;
+    margin: auto;
+    padding: 20px;
+    font-family: 'Oswald', serif;
+    margin-top: 125px;
+    margin-bottom: 100px;
+}
+
+.jumbotron {
+    background-color: #6c7ae0;
+    color: white;
+    padding: 2rem 1rem;
+    text-align: center;
+    border-radius: 5px;
+}
+
+h1 {
+    margin: 0;
+    font-size: 2.5rem;
+}
+
+h4 {
+    font-size: 1.5rem;
+}
+
+.btn-creator-blue {
+    background-color: #4e5ba6;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+@media (max-width: 768px) {
+    .jumbotron {
+        padding: 1rem;
+    }
+
+    h1 {
+        font-size: 2rem;
+    }
+
+    h4 {
+        font-size: 1.2rem;
+    }
+}

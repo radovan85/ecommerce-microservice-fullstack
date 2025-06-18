@@ -1,0 +1,87 @@
+body {
+    margin: 0;
+    padding: 0;
+    background-color: #f5f5f5;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    margin-top: 125px;
+    font-family: 'Oswald', serif;
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.pagination {
+    margin-bottom: 100px;
+    float: right;
+    margin-top: 10px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #ffffff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e0e0e0;
+    /* Add border */
+}
+
+th,
+td {
+    padding: 10px;
+    text-align: center;
+    /* Center align content */
+    border-bottom: 1px solid #e0e0e0;
+    border-right: 1px solid #e0e0e0;
+    /* Add border to columns */
+}
+
+th {
+    background-color: #f5f5f5;
+}
+
+.actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    /* Center align buttons */
+}
+
+.update-btn,
+.delete-btn {
+    padding: 5px 10px;
+    border: none;
+    cursor: pointer;
+    background-color: #007bff;
+    color: #ffffff;
+    border-radius: 5px;
+    transition: background-color 0.3s;
+    /* Add transition */
+}
+
+.delete-btn {
+    background-color: #dc3545;
+}
+
+.update-btn:hover,
+.delete-btn:hover {
+    background-color: #0056b3;
+    /* Change color on hover */
+}
+
+tr:hover {
+    background-color: #f9f9f9;
+    /* Hover effect for the entire row */
+}
+
+@media (max-width: 768px) {
+    table {
+        font-size: 14px;
+    }
+}

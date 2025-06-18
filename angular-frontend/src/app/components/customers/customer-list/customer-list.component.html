@@ -1,0 +1,53 @@
+<div class="container">
+    <h2>Customers</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>First Name</th>
+                <th>Last Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Status</th>
+                <th>Details</th>
+            </tr>
+        </thead>
+        <tbody>
+            <ng-template ngFor let-tempCustomer [ngForOf]="getPaginatedCustomers()">
+                <tr>
+                    <td [innerHTML]="tempCustomer.customerId"></td>
+                    <td [innerHTML]="retrieveUser(tempCustomer.userId).firstName"></td>
+                    <td [innerHTML]="retrieveUser(tempCustomer.userId).lastName"></td>
+                    <td [innerHTML]="retrieveUser(tempCustomer.userId).email"></td>
+                    <td [innerHTML]="tempCustomer.customerPhone"></td>
+                    <td>
+                        <ng-container *ngIf="retrieveUser(tempCustomer.userId); let user">
+                            <ng-container *ngIf="user.enabled === 1; then isEnabledContent else suspendedContent">
+                            </ng-container>
+
+                            <ng-template #isEnabledContent>
+                                <span>Enabled</span>
+                            </ng-template>
+
+                            <ng-template #suspendedContent>
+                                <span>Suspended</span>
+                            </ng-template>
+                        </ng-container>
+
+
+                    </td>
+                    <td>
+                        <button class="btn-details" [routerLink]="[`/customers/customerDetails/`, tempCustomer.customerId]"
+                            [innerHTML]="'Details'"></button>
+                    </td>
+                </tr>
+            </ng-template>
+        </tbody>
+    </table>
+
+    <div class="pagination" *ngIf="getAllCustomers().length > 0">
+        <button (click)="prevPage()" [disabled]="getCurrentPage() == 1">Previous</button>
+        <span>Page {{ getCurrentPage() }} / {{ getTotalPages() }}</span>
+        <button (click)="nextPage()" [disabled]="getCurrentPage() == getTotalPages()">Next</button>
+    </div>
+</div>

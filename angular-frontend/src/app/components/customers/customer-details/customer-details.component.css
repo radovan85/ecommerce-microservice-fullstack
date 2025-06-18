@@ -1,0 +1,95 @@
+/* Complete CSS */
+body {
+    background-color: #f4f4f4;
+    color: #12044F;
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    font-family: 'Oswald', sans-serif;
+    max-width: 1200px;
+    margin: 120px auto 100px;
+    padding: 0 15px;
+}
+
+.page-header h1 {
+    font-size: 2.5rem;
+    color: #007bff;
+}
+
+.page-header .lead {
+    font-size: 1.2rem;
+    color: #555;
+}
+
+.address-table {
+    width: 100%;
+    margin-top: 20px;
+    border-collapse: collapse;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    border: 2px solid #007bff; /* Added border to the table */
+}
+
+.address-table th,
+.address-table td {
+    padding: 15px;
+    text-align: center; /* Center aligned table cells */
+    border-bottom: 1px solid #ddd;
+}
+
+.address-table th {
+    background-color: #007bff;
+    color: white;
+}
+
+.address-table tr:nth-child(even) {
+    background-color: #f2f2f2;
+}
+
+.address-table tr:hover {
+    background-color: #ddd;
+}
+
+.buttons {
+    text-align: center;
+    margin-top: 30px;
+}
+
+.buttons button {
+    padding: 10px 20px;
+    margin: 0 10px;
+    background-color: #28a745; /* Green color for 'All Customers' button */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.buttons button:nth-child(2) {
+    background-color: #040404; 
+}
+
+.buttons button:nth-child(3) {
+    background-color: #dc3545; /* Red color for 'Remove Customer' button */
+}
+
+.buttons button:hover {
+    opacity: 0.8;
+}
+
+@media (max-width: 768px) {
+    .container {
+        margin: 60px auto;
+    }
+
+    .page-header h1 {
+        font-size: 2rem;
+    }
+
+    .buttons button {
+        width: 100%;
+        margin-top: 10px;
+    }
+}

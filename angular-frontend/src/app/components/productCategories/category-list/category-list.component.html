@@ -1,0 +1,35 @@
+<div class="container">
+    <h1 class="page-header">Category List</h1>
+    <ng-container *ngIf="getHasAuthorityAdmin()">
+        <button routerLink="/categories/addCategory" class="mt-4 mb-4 btn btn-info">Add Category</button>
+    </ng-container>
+    <table>
+        <thead>
+            <tr>
+                <th>Category Id</th>
+                <th>Name</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <ng-template ngFor let-tempCategory [ngForOf]="getPaginatedCategories()">
+                <tr>
+                    <td [innerHTML]="tempCategory.productCategoryId"></td>
+                    <td [innerHTML]="tempCategory.name"></td>
+                    <td class="actions">
+                        <button class="update-btn"
+                            [routerLink]="[`/categories/updateCategory`, tempCategory.productCategoryId]">Update</button>
+                        <button class="delete-btn"
+                            (click)="deleteCategory(tempCategory.productCategoryId)">Delete</button>
+                    </td>
+                </tr>
+            </ng-template>
+        </tbody>
+    </table>
+    <div class="pagination" *ngIf="getAllCategories().length > 0">
+        <button (click)="prevPage()" [disabled]="getCurrentPage() == 1">Previous</button>
+        <span>Page {{ getCurrentPage() }} of {{ getTotalPages() }}</span>
+        <button (click)="nextPage()" [disabled]="getCurrentPage() == getTotalPages()">Next</button>
+    </div>
+    
+</div>

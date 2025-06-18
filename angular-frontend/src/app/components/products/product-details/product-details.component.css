@@ -1,0 +1,123 @@
+/* General styles */
+body {
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+}
+
+/* Container styles */
+.container {
+    width: 80%;
+    margin: 20px auto;
+    background-color: #fff;
+    padding: 20px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    font-family: 'Oswald', serif;
+    margin-top: 125px;
+    margin-bottom: 100px;
+    color: #2c0265;
+}
+
+/* Header styles */
+.main-header h1 {
+    font-size: 24px;
+    color: #333;
+    margin-bottom: 20px;
+}
+
+/* Table styles */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+table,
+th,
+td {
+    border: 2px solid #e0e0e0;
+    /* Lighter border color */
+}
+
+th,
+td {
+    padding: 10px;
+    text-align: left;
+}
+
+th {
+    background-color: #f0f0f0;
+    /* Lighter header background */
+    color: #2c0265;
+    /* Header text color to match the theme */
+}
+
+td img {
+    width: auto;
+    /* Adjust width automatically */
+    height: 150px;
+    /* Increased height */
+    border-radius: 5px;
+    /* Rounded corners for the image */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    /* Subtle shadow for depth */
+}
+
+/* Button styles */
+.btn-options {
+    margin-top: 40px;
+    text-align: center;
+    transition: color background-color 0.3s;
+}
+
+.btn-options button {
+    margin-right: 10px;
+    padding: 4px 14px;
+    border: none;
+    /* Remove default border */
+    border-radius: 4px;
+    /* Rounded corners for buttons */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    /* Consistent shadow with the image */
+    transition: background-color 0.3s, color 0.3s;
+    /* Smooth transition for hover effect */
+}
+
+.delete-button {
+    background-color: #c20707;
+    color: black;
+}
+
+.update-button {
+    background-color: #4294f7;
+    color: black;
+}
+
+.order-button {
+    background-color: #123969;
+    color: #d4d7db;
+}
+
+.image-button {
+    background-color: #333;
+    color: #d4d7db;
+}
+
+.btn-options button:hover {
+    background-color: #2c0265;
+    /* Theme color for hover state */
+    color: #fff;
+    /* White text on hover */
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .container {
+        width: 95%;
+    }
+
+    .product-image {
+        height: 100px;
+        /* Smaller image height for mobile devices */
+    }
+}
