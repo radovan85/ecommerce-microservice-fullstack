@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: angular-ecommerce
+  namespace: default
+spec:
+  selector:
+    app: angular-ecommerce
+  ports:
+    - port: 4200
+      targetPort: 4200
+  type: NodePort

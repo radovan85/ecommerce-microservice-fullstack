@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api-gateway
+  template:
+    metadata:
+      labels:
+        app: api-gateway
+    spec:
+      initContainers:
+        - name: wait-for-eureka
+          image: busybox
+          command:
+            - sh
+            - -c
+            - >
+              until nc -z eureka-server 8761;
+              do echo waiting for eureka; sleep 2; done
+      containers:
+        - name: api-gateway
+          image: ghcr.io/radovan85/api-gateway:dev3
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_APPLICATION_NAME
+              value: api-gateway
+            - name: EUREKA_URL
+              value: http://eureka-server:8761/eureka
+            - name: JAVA_OPTS
+              value: -Xms256m -Xmx512m
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 5

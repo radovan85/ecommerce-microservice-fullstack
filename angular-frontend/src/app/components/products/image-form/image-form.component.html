@@ -1,0 +1,18 @@
+<div class="container">
+    <div class="form-container">
+        <h2 class="form-title">Image Form</h2>
+        <div class="product-name">
+            <h5 [innerHTML]="getCurrentProduct().productName"></h5>
+        </div>
+        <form>
+            <div class="form-group">
+                <label for="productImage">Product Image:</label>
+                <input type="file" id="productImage" name="productImage" #imageInput (change)="onFileSelected()">
+            </div>
+            <div class="form-group">
+                <button type="submit" class="upload-btn" [innerHTML]="'Upload'"
+                    [disabled]="!getisFileSelected()"></button>
+            </div>
+        </form>
+    </div>
+</div>

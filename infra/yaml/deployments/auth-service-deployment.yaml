@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-service
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth-service
+  template:
+    metadata:
+      labels:
+        app: auth-service
+    spec:
+      initContainers:
+        - name: wait-for-postgres
+          image: busybox
+          command:
+            - sh
+            - -c
+            - >
+              until nc -z postgres 5432;
+              do echo waiting for postgres; sleep 2; done
+        - name: wait-for-eureka
+          image: busybox
+          command:
+            - sh
+            - -c
+            - >
+              until nc -z eureka-server 8761;
+              do echo waiting for eureka; sleep 2; done
+        - name: wait-for-nats
+          image: busybox
+          command:
+            - sh
+            - -c
+            - >
+              until nc -z nats 4222;
+              do echo waiting for nats; sleep 2; done
+      containers:
+        - name: auth-service
+          image: ghcr.io/radovan85/auth-service:dev3
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: DB_URL
+              value: jdbc:postgresql://postgres:5432/ecommerce-db
+            - name: DB_USERNAME
+              value: postgres
+            - name: DB_PASSWORD
+              value: "1111"
+            - name: SPRING_APPLICATION_NAME
+              value: auth-service
+            - name: EUREKA_URL
+              value: http://eureka-server:8761/eureka
+            - name: NATS_URL
+              value: nats://nats:4222
+            - name: JAVA_OPTS
+              value: -Xms256m -Xmx512m
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 5

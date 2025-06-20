@@ -1,0 +1,170 @@
+body {
+    margin: 0;
+    padding: 0;
+    background-color: #f7f7f7;
+    /* Lighter background for a fresher look */
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    margin-top: 125px;
+    /* Updated top margin */
+    margin-bottom: 100px;
+    /* Updated bottom margin */
+    font-family: 'Roboto', sans-serif;
+    color: #333;
+    background: #fff;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+    border-radius: 10px;
+    font-family: 'Oswald', serif;
+}
+
+.main-header h1 {
+    font-size: 2.5rem;
+    /* Larger font size for the main header */
+    color: #5D3B99;
+    /* Deep purple for a touch of elegance */
+    margin-bottom: 30px;
+    /* Adjusted spacing */
+}
+
+.add-product-btn {
+    background-color: #5D3B99;
+    /* Matching button color with the header */
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    /* Rounded corners for buttons */
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    /* Smoother transition */
+}
+
+.add-product-btn:hover {
+    background-color: #7D5BA6;
+    /* Lighter purple on hover for interaction feedback */
+}
+
+.card-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    /* Space between for even distribution */
+    gap: 20px;
+    /* Gap between cards for better separation */
+}
+
+.card {
+    width: calc(33.333% - 20px);
+    /* Three cards per row with proper spacing */
+    margin-bottom: 20px;
+    /* Consistent vertical spacing */
+    border: none;
+    /* Removing border for a cleaner look */
+    border-radius: 10px;
+    /* Consistent rounded corners */
+    overflow: hidden;
+    /* Ensures content fits within the card */
+    transition: transform 0.3s, box-shadow 0.3s;
+    /* Smooth transitions for interaction */
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    /* Slight lift effect on hover */
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    /* Enhanced shadow on hover for depth */
+}
+
+.card img {
+    width: 100%;
+    /* Full width of the card */
+    height: 200px;
+    /* Fixed height for all images */
+    object-fit: cover;
+    /* Cover the area without stretching the image */
+    border-radius: 5px;
+    /* Optional: rounded corners for the image */
+}
+
+.product-info {
+    padding: 15px;
+}
+
+.product-name {
+    font-size: 1.25rem;
+    /* Larger font size for product names */
+    color: #5D3B99;
+    /* Color consistency with the theme */
+    white-space: nowrap;
+    /* Prevents wrapping to maintain card aesthetics */
+}
+
+.product-price {
+    font-size: 1.1rem;
+    /* Adjusted font size for better hierarchy */
+    color: #333;
+    /* Consistent text color for readability */
+    font-weight: 500;
+    /* Medium weight for price emphasis */
+}
+
+.button-container button {
+    background-color: #5D3B99;
+    /* Theme-consistent button color */
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 5px;
+    /* Rounded corners for buttons */
+    cursor: pointer;
+    transition: background-color 0.2s;
+    /* Smoother transition */
+}
+
+.button-container button:hover {
+    background-color: #7D5BA6;
+    /* Lighter purple on hover */
+}
+
+.pagination {
+    display: flex;
+    justify-content: flex-end;
+    /* Align pagination to the right */
+    align-items: center;
+    margin-top: 20px;
+    /* Adjusted spacing */
+    padding-right: 20px;
+    /* Padding for visual balance */
+}
+
+.pagination button {
+    background-color: #5D3B99;
+    /* Consistent pagination button color */
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    margin-left: 10px;
+    /* Spacing between pagination buttons */
+    border-radius: 5px;
+    /* Rounded corners for buttons */
+    cursor: pointer;
+    transition: background-color 0.2s;
+    /* Smoother transition */
+}
+
+.pagination button:hover {
+    background-color: #7D5BA6;
+    /* Lighter purple on hover */
+}
+
+@media screen and (max-width: 768px) {
+    .card {
+        width: 100%;
+        margin-bottom: 20px;
+    }
+}

@@ -1,0 +1,44 @@
+<app-navbar></app-navbar>
+<div class="container">
+    <div class="page-header">
+        <h1>Customer Shipping Address</h1>
+        <p class="lead">Here is the address of <span id="customerName"
+                [innerHTML]="getUserById(getCustomer().userId).firstName + ' ' + getUserById(getCustomer().userId).lastName"></span>
+        </p>
+    </div>
+
+    <table class="address-table">
+        <thead>
+            <tr>
+                <th>Address</th>
+                <th>City</th>
+                <th>State</th>
+                <th>Post Code</th>
+                <th>Country</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td id="address" [innerHTML]="getAddress(getCustomer().shippingAddressId).address"></td>
+                <td id="city" [innerHTML]="getAddress(getCustomer().shippingAddressId).city"></td>
+                <td id="state" [innerHTML]="getAddress(getCustomer().shippingAddressId).state"></td>
+                <td id="postcode" [innerHTML]="getAddress(getCustomer().shippingAddressId).postcode"></td>
+                <td id="country" [innerHTML]="getAddress(getCustomer().shippingAddressId).country"></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="buttons">
+        <button (click)="goBack()">Back</button>
+        <ng-container *ngIf="getUserById(getCustomer().userId); let user">
+            <ng-container *ngIf="user.enabled === 1; then isEnabledContent else suspendedContent">
+            </ng-container>
+            <ng-template #isEnabledContent>
+                <button (click)="suspendCustomer(getCustomer().customerId)">Suspend Customer</button>
+            </ng-template>
+            <ng-template #suspendedContent>
+                <button (click)="reactivateCustomer(getCustomer().customerId)">Reactivate Customer</button></ng-template>
+        </ng-container>
+        <button (click)="deleteCustomer(getCustomer().customerId)">Remove Customer</button>
+    </div>
+</div>

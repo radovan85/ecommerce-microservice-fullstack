@@ -1,0 +1,86 @@
+name: CI Build and Push Images
+
+on:
+  push:
+    branches: [ "dev3" ]
+  pull_request:
+    branches: [ "dev3" ]
+
+jobs:
+  build-and-push:
+    name: Build and Push Docker Images
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Install SBT
+        uses: coursier/setup-action@v1
+        with:
+          apps: sbt
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_PAT }}
+
+      - name: Build Spring services (Maven)
+        run: |
+          set -e
+          mvn -f backend/eureka-server-app/pom.xml clean install -DskipTests
+          mvn -f backend/api-gateway/pom.xml clean install -DskipTests
+          mvn -f backend/auth-service/pom.xml clean install -DskipTests
+          mvn -f backend/customer-service/pom.xml clean install -DskipTests
+          mvn -f backend/cart-service/pom.xml clean install -DskipTests
+
+      - name: Build Play services (SBT)
+        run: |
+          set -e
+          cd backend/product-service && sbt dist && cd ../..
+          cd backend/order-service && sbt dist && cd ../..
+
+
+      - name: Build Angular frontend
+        run: |
+          cd angular-frontend
+          npm install
+          npm run build
+          cd ..
+
+      - name: Build and Push Docker Images
+        run: |
+          IMAGE_PREFIX=ghcr.io/${{ github.repository_owner }}
+          docker build -t $IMAGE_PREFIX/eureka-server:dev3 ./backend/eureka-server-app
+          docker build -t $IMAGE_PREFIX/api-gateway:dev3 ./backend/api-gateway
+          docker build -t $IMAGE_PREFIX/auth-service:dev3 ./backend/auth-service
+          docker build -t $IMAGE_PREFIX/customer-service:dev3 ./backend/customer-service
+          docker build -t $IMAGE_PREFIX/cart-service:dev3 ./backend/cart-service
+          docker build -t $IMAGE_PREFIX/product-service:dev3 ./backend/product-service
+          docker build -t $IMAGE_PREFIX/order-service:dev3 ./backend/order-service
+          docker build -t $IMAGE_PREFIX/angular-ecommerce:dev3 ./angular-frontend
+
+          docker push $IMAGE_PREFIX/eureka-server:dev3
+          docker push $IMAGE_PREFIX/api-gateway:dev3
+          docker push $IMAGE_PREFIX/auth-service:dev3
+          docker push $IMAGE_PREFIX/customer-service:dev3
+          docker push $IMAGE_PREFIX/cart-service:dev3
+          docker push $IMAGE_PREFIX/product-service:dev3
+          docker push $IMAGE_PREFIX/order-service:dev3
+          docker push $IMAGE_PREFIX/angular-ecommerce:dev3

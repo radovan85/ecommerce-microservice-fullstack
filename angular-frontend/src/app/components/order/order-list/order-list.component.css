@@ -1,0 +1,119 @@
+/* Add this CSS to style your HTML component */
+
+
+.container {
+    margin-top: 125px;
+    margin-bottom: 100px;
+    /* Bootstrap-like container */
+    max-width: 1140px;
+    width: 100%;
+    padding-right: 15px;
+    padding-left: 15px;
+    margin-right: auto;
+    margin-left: auto;
+    box-sizing: border-box;
+    font-family: 'Oswald', serif;
+}
+
+.page-header h1 {
+    /* Style your page header here */
+    font-size: 2rem;
+    color: #333;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+table,
+th,
+td {
+    border: 1px solid #ddd;
+    text-align: center;
+    color: #2c0265;
+    /* Center align table data */
+}
+
+th {
+    background-color: #047dac;
+    /* Color for table head */
+    color: white;
+}
+
+/* Responsive table */
+@media (max-width: 768px) {
+    .container {
+        max-width: 100%;
+    }
+
+    table,
+    thead,
+    tbody,
+    th,
+    td,
+    tr {
+        display: block;
+    }
+
+    thead tr {
+        position: absolute;
+        top: -9999px;
+        left: -9999px;
+    }
+
+    tr {
+        border: 1px solid #ccc;
+    }
+
+    td {
+        /* Behave like a "row" */
+        border: none;
+        border-bottom: 1px solid #eee;
+        position: relative;
+        padding-left: 50%;
+    }
+
+    td:before {
+        /* Now like a table header */
+        position: absolute;
+        /* Top/left values mimic padding */
+        top: 6px;
+        left: 6px;
+        width: 45%;
+        padding-right: 10px;
+        white-space: nowrap;
+        /* Label the data */
+        content: attr(data-label);
+    }
+}
+
+.pagination {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    margin-top: 20px;
+    padding-right: 20px;
+}
+
+.pagination button {
+    background-color: #007bff;
+    /* Changed to blue */
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    margin-left: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.pagination button:hover {
+    background-color: #0056b3;
+    /* Darker blue on hover */
+}
+
+
+
+/* Add styles for buttons and other elements as needed */
