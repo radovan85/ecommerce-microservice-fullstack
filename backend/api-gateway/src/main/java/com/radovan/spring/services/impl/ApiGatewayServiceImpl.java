@@ -45,7 +45,6 @@ public class ApiGatewayServiceImpl implements ApiGatewayService {
 		String serviceUrl = cachedServiceUrls.computeIfAbsent(serviceName,
 				key -> serviceUrlProvider.getServiceUrl(serviceName));
 
-		System.out.println("Service URL: " + serviceUrl);
 		if (serviceUrl == null) {
 			return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body("Service " + serviceName + " not found");
 		}
