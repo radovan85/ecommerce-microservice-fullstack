@@ -1,80 +1,84 @@
 package com.radovan.play.services.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.radovan.play.services.EurekaServiceDiscovery;
-import play.libs.ws.WSClient;
-import play.libs.ws.WSResponse;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
+import play.libs.ws.*;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Iterator;
 
 @Singleton
 public class EurekaServiceDiscoveryImpl implements EurekaServiceDiscovery {
 
     private static final String EUREKA_API_SERVICES_URL = "http://eureka-server:8761/eureka/apps";
-    private final WSClient wsClient;
-    private final ObjectMapper objectMapper;
+    private WSClient wsClient;
 
     @Inject
-    public EurekaServiceDiscoveryImpl(WSClient wsClient) {
+    private void initialize(WSClient wsClient) {
         this.wsClient = wsClient;
-        this.objectMapper = new ObjectMapper();
     }
 
     @Override
     public String getServiceUrl(String serviceName) {
         try {
-            String serviceUrl = EUREKA_API_SERVICES_URL + "/" + serviceName;
-            System.out.println("*** Pokušavam da preuzmem servis: " + serviceName);
-            System.out.println("*** URL za Eureka API: " + serviceUrl);
+            boolean runningInKubernetes = System.getenv("KUBERNETES_SERVICE_HOST") != null;
+            String address;
+            int port;
 
-            WSResponse rawResponse = wsClient.url(serviceUrl)
-                    .setRequestTimeout(5000)
+            if (runningInKubernetes) {
+                address = serviceName; // DNS ime u K8s
+                port = getK8sServicePort(serviceName);
+            } else {
+                JsonNode response = wsClient.url(EUREKA_API_SERVICES_URL + "/" + serviceName)
+                        .get()
+                        .toCompletableFuture()
+                        .join()
+                        .asJson();
+
+                JsonNode application = response.get("application");
+                if (application == null) {
+                    throw new RuntimeException("Servis nije pronađen u Eureka registry: " + serviceName);
+                }
+
+                Iterator<JsonNode> instances = application.get("instance").elements();
+                JsonNode instance = instances.next();
+                address = instance.get("hostName").asText();
+                port = instance.get("port").get("$").asInt();
+            }
+
+            return "http://" + address + ":" + port;
+
+        } catch (Exception e) {
+            System.err.println("❌ Greška u getServiceUrl za " + serviceName + ": " + e.getMessage());
+            return "http://" + serviceName + ":8080"; // fallback URL
+        }
+    }
+
+    private int getK8sServicePort(String serviceName) {
+        try {
+            String token = Files.readString(Paths.get("/var/run/secrets/kubernetes.io/serviceaccount/token"));
+            String url = "https://kubernetes.default.svc/api/v1/namespaces/default/services/" + serviceName;
+
+            JsonNode response = wsClient.url(url)
+                    .addHeader("Authorization", "Bearer " + token)
                     .addHeader("Accept", "application/json")
                     .get()
                     .toCompletableFuture()
-                    .join();
+                    .join()
+                    .asJson();
 
-            System.out.println("*** WSResponse primljen! Status: " + rawResponse.getStatus());
-            String rawBody = rawResponse.getBody();
-            System.out.println("*** Odgovor od Eureka registry: " + rawBody);
+            return response.path("spec").path("ports").get(0).path("port").asInt();
 
-            if (rawResponse.getStatus() != 200) {
-                throw new RuntimeException("Eureka registry ne odgovara ispravno! Status: " + rawResponse.getStatus());
-            }
-
-            // ✅ Parsiranje JSON odgovora
-            JsonNode responseJson = objectMapper.readTree(rawBody);
-
-            JsonNode application = responseJson.get("application");
-            if (application == null) {
-                throw new RuntimeException("Servis " + serviceName + " nije pronađen u Eureka registry!");
-            }
-
-            Iterator<JsonNode> instances = application.get("instance").elements();
-            while (instances.hasNext()) {
-                JsonNode instance = instances.next();
-                String address = instance.get("hostName").asText();
-                JsonNode portNode = instance.get("port");
-
-                // ✅ Ispravno dohvatamo port iz JSON strukture
-                int port = portNode.get("$").asInt();
-
-                if (address == null || port == 0) {
-                    throw new RuntimeException("Nevalidni podaci za servis: " + serviceName);
-                }
-
-                return "http://" + address + ":" + port;
-            }
-
-            throw new RuntimeException("Servis nije pronađen: " + serviceName);
-
+        } catch (IOException e) {
+            System.err.println("❌ Token nije dostupan: " + e.getMessage());
         } catch (Exception e) {
-            System.err.println("*** Neuspešno preuzimanje URL-a iz Eureka registry! *** " + e.getMessage());
-            e.printStackTrace();
-            throw new RuntimeException("Failed to fetch service URL from Eureka registry", e);
+            System.err.println("❌ Neuspešan K8s port fetch za " + serviceName + ": " + e.getMessage());
         }
+
+        return 8080; // fallback port
     }
 }
