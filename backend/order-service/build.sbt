@@ -17,8 +17,6 @@ libraryDependencies ++= Seq(
   "com.zaxxer" % "HikariCP" % "5.1.0",
   "org.postgresql" % "postgresql" % "42.7.4",
   "org.playframework.anorm" %% "anorm" % "2.8.1",
-  "org.playframework" %% "play-java-jpa" % "3.0.5",
-  "org.playframework" %% "play-jdbc-evolutions" % "3.0.5",
   "com.fasterxml.jackson.core" % "jackson-databind" % "2.17.2",
   "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.17.2",
   "org.modelmapper" % "modelmapper" % "3.2.2",

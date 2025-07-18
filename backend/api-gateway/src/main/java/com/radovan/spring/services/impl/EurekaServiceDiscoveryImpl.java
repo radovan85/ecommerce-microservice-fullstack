@@ -47,7 +47,14 @@ public class EurekaServiceDiscoveryImpl implements EurekaServiceDiscovery {
 			Iterator<JsonNode> instances = application.get("instance").elements();
 			while (instances.hasNext()) {
 				JsonNode instance = instances.next();
-				String address = instance.get("hostName").asText();
+				boolean runningInKubernetes = System.getenv("KUBERNETES_SERVICE_HOST") != null;
+				String address = null;
+				if(runningInKubernetes) {
+					address = serviceName;
+				}else {
+					address = instance.get("hostName").asText();
+				}
+				
 				JsonNode portNode = instance.get("port");
 
 				// ✅ Ispravno dohvatamo port iz JSON strukture

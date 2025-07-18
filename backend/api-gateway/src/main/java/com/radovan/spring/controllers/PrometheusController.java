@@ -7,8 +7,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestTemplate;
 
 import com.radovan.spring.services.PrometheusService;
+import com.radovan.spring.utils.ServiceUrlProvider;
+
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry;
 
 @RestController
@@ -17,11 +20,17 @@ public class PrometheusController {
 
 	private PrometheusService prometheusService;
 	private PrometheusMeterRegistry prometheusRegistry;
+	private RestTemplate restTemplate;
+	private ServiceUrlProvider urlProvider;
 
+	
 	@Autowired
-	private void initialize(PrometheusService prometheusService, PrometheusMeterRegistry prometheusRegistry) {
+	private void initialize(PrometheusService prometheusService, PrometheusMeterRegistry prometheusRegistry,
+			RestTemplate restTemplate, ServiceUrlProvider urlProvider) {
 		this.prometheusService = prometheusService;
 		this.prometheusRegistry = prometheusRegistry;
+		this.restTemplate = restTemplate;
+		this.urlProvider = urlProvider;
 	}
 
 	@GetMapping(value = "/prometheus", produces = MediaType.TEXT_PLAIN_VALUE)
@@ -87,5 +96,29 @@ public class PrometheusController {
 	public ResponseEntity<String> externalApiLatency() {
 		prometheusService.updateExternalApiLatency(0.5); // Simulirani podatak
 		return new ResponseEntity<>("External API latency metric recorded!", HttpStatus.OK);
+	}
+	
+	@GetMapping(value = "/metrics/all", produces = MediaType.TEXT_PLAIN_VALUE)
+	public ResponseEntity<String> forwardAllMetrics() {
+		StringBuilder allMetrics = new StringBuilder();
+
+		String[] services = { 
+				urlProvider.getAuthServiceUrl() + "/metrics",
+				urlProvider.getCartServiceUrl() + "/metrics",
+				urlProvider.getCustomerServiceUrl() + "/metrics",
+				urlProvider.getOrderServiceUrl() + "/metrics",
+				urlProvider.getProductServiceUrl() + "/metrics"
+				};
+
+		for (String url : services) {
+			try {
+				String data = restTemplate.getForObject(url, String.class);
+				allMetrics.append(data).append("\n");
+			} catch (Exception e) {
+				allMetrics.append("# Failed to fetch metrics from ").append(url).append("\n");
+			}
+		}
+
+		return ResponseEntity.ok(allMetrics.toString());
 	}
 }
