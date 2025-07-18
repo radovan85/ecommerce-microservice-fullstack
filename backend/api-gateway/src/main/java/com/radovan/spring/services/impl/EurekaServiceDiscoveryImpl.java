@@ -50,10 +50,14 @@ public class EurekaServiceDiscoveryImpl implements EurekaServiceDiscovery {
 				boolean runningInKubernetes = System.getenv("KUBERNETES_SERVICE_HOST") != null;
 				String address = null;
 				if(runningInKubernetes) {
+					System.out.println("Kubernetes host detected...");
 					address = serviceName;
 				}else {
+					System.out.println("Kubernetes host is not provided, default settings will be provided!");
 					address = instance.get("hostName").asText();
 				}
+				
+				System.out.println("Address: " + address);
 				
 				JsonNode portNode = instance.get("port");
 
