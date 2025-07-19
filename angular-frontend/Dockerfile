@@ -4,11 +4,20 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 COPY . .
-RUN npm run build -- --configuration=production
+# Dodaj proveru strukture pre build-a
+RUN ls -la
+RUN npm run build -- --configuration=production --base-href=/
+# Proveri da li je build uspeo
+RUN ls -la /app/dist/ecommerce-frontend
 
 # Stage 2: Nginx serve
 FROM nginx:alpine
+# Obriši default nginx sadržaj
+RUN rm -rf /usr/share/nginx/html/*
+# Kopiraj Angular build
 COPY --from=build /app/dist/ecommerce-frontend /usr/share/nginx/html
 COPY frontend.nginx.conf /etc/nginx/conf.d/default.conf
-EXPOSE 4200
+# Proveri kopirane fajlove
+RUN ls -la /usr/share/nginx/html
+EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
