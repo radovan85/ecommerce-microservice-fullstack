@@ -98,7 +98,6 @@ export class ProductDetailsComponent implements OnInit {
     if (image) {
       return `data:image/jpg;base64,${image.data}`;
     } else {
-      // Return URL for default image
       return `https://t4.ftcdn.net/jpg/04/99/93/31/360_F_499933117_ZAUBfv3P1HEOsZDrnkbNCt4jc3AodArl.jpg`;
     }
   }
