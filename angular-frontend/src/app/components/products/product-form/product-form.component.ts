@@ -11,11 +11,9 @@ import { ValidationService } from '../../../services/validation.service';
   standalone: true,
   imports: [CommonModule],
   templateUrl: './product-form.component.html',
-  styleUrl: './product-form.component.css'
+  styleUrl: './product-form.component.css',
 })
 export class ProductFormComponent implements OnInit, AfterViewInit {
-
-
   private validationService = inject(ValidationService);
   private productService = inject(ProductService);
   private allCategories: ProductCategory[] = [];
@@ -42,16 +40,17 @@ export class ProductFormComponent implements OnInit, AfterViewInit {
       });
 
       if (this.validationService.validateProduct()) {
-        await axios.post(`${this.productService.getTargetUrl()}`, {
-          productName: serializedData[`product-name`],
-          productDescription: serializedData[`product-description`],
-          productBrand: serializedData[`product-brand`],
-          productModel: serializedData[`product-model`],
-          productPrice: serializedData[`product-price`],
-          unitStock: serializedData[`unit-stock`],
-          discount: serializedData[`discount`],
-          productCategoryId: serializedData[`categoryId`]
-        })
+        await axios
+          .post(`${this.productService.getTargetUrl()}`, {
+            productName: serializedData[`product-name`],
+            productDescription: serializedData[`product-description`],
+            productBrand: serializedData[`product-brand`],
+            productModel: serializedData[`product-model`],
+            productPrice: serializedData[`product-price`],
+            unitStock: serializedData[`unit-stock`],
+            discount: serializedData[`discount`],
+            productCategoryId: serializedData[`categoryId`],
+          })
           .then(() => {
             this.productService.redirectAllProducts();
           })
@@ -68,15 +67,13 @@ export class ProductFormComponent implements OnInit, AfterViewInit {
     return this.validationService.validateNumber(event);
   }
 
-  listAllCategories() {
-    this.categoryService.collectAllCategories()
-      .then((response) => {
-        this.allCategories = response.data;
-      })
+  listAllCategories(): Promise<any> {
+    return this.categoryService.collectAllCategories().then((response) => {
+      this.allCategories = response.data;
+    });
   }
 
   public getAllCategories(): ProductCategory[] {
     return this.allCategories;
   }
-
 }

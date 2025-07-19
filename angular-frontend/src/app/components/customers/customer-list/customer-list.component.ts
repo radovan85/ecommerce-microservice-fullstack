@@ -9,13 +9,11 @@ import { RouterLink } from '@angular/router';
 @Component({
   selector: 'app-customer-list',
   standalone: true,
-  imports: [CommonModule,RouterLink],
+  imports: [CommonModule, RouterLink],
   templateUrl: './customer-list.component.html',
-  styleUrl: './customer-list.component.css'
+  styleUrl: './customer-list.component.css',
 })
 export class CustomerListComponent implements OnInit {
-
-
   private allCustomers: Customer[] = [];
   private allUsers: User[] = [];
   private userService = inject(UserService);
@@ -26,14 +24,11 @@ export class CustomerListComponent implements OnInit {
   private totalPages = 1;
 
   ngOnInit(): void {
-    Promise.all([
-      this.listAllUsers(),
-      this.listAllCustomers()
-    ])
-
-      .catch((error) => {
+    Promise.all([this.listAllUsers(), this.listAllCustomers()]).catch(
+      (error) => {
         console.log(`Error loading functions  ${error}`);
-      })
+      }
+    );
   }
 
   getAllCustomers(): Customer[] {
@@ -45,32 +40,26 @@ export class CustomerListComponent implements OnInit {
   }
 
   listAllCustomers(): Promise<any> {
-    return new Promise(() => {
-      this.customerService.collectAllCustomers()
-        .then((response) => {
-            this.allCustomers = response.data;
-            this.totalPages = Math.ceil(this.allCustomers.length / this.pageSize);
-            this.setPage(1);
-          })
-    })
+    return this.customerService.collectAllCustomers().then((response) => {
+      this.allCustomers = response.data;
+      this.totalPages = Math.ceil(this.allCustomers.length / this.pageSize);
+      this.setPage(1);
+    });
   }
 
   listAllUsers(): Promise<any> {
-    return new Promise(() => {
-      this.userService.collectAllUsers()
-        .then((response) => {
-            this.allUsers = response.data;
-          })
-    })
+    return this.userService.collectAllUsers().then((response) => {
+      this.allUsers = response.data;
+    });
   }
 
   retrieveUser(userId: any): User {
-    var returnValue = new User;
+    var returnValue = new User();
     this.allUsers.forEach((tempUser) => {
       if (tempUser.id === userId) {
         returnValue = tempUser;
       }
-    })
+    });
 
     return returnValue;
   }
@@ -80,7 +69,10 @@ export class CustomerListComponent implements OnInit {
       return;
     }
     this.currentPage = page;
-    this.paginatedCustomers = this.allCustomers.slice((page - 1) * this.pageSize, page * this.pageSize);
+    this.paginatedCustomers = this.allCustomers.slice(
+      (page - 1) * this.pageSize,
+      page * this.pageSize
+    );
   }
 
   nextPage() {
@@ -102,5 +94,4 @@ export class CustomerListComponent implements OnInit {
   getTotalPages() {
     return this.totalPages;
   }
-
 }

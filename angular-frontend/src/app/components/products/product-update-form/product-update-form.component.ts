@@ -13,28 +13,24 @@ import { ValidationService } from '../../../services/validation.service';
   standalone: true,
   imports: [CommonModule],
   templateUrl: './product-update-form.component.html',
-  styleUrl: './product-update-form.component.css'
+  styleUrl: './product-update-form.component.css',
 })
 export class ProductUpdateFormComponent implements OnInit, AfterViewInit {
-
   private validationService = inject(ValidationService);
   private allCategories: ProductCategory[] = [];
-  private currentProduct: Product = new Product;
+  private currentProduct: Product = new Product();
   private productService = inject(ProductService);
   private route = inject(ActivatedRoute);
   private categoryService = inject(ProductCategoryService);
 
-
   ngOnInit(): void {
     Promise.all([
       this.getProductDetails(this.route.snapshot.params[`productId`]),
-      this.listAllCategories()
+      this.listAllCategories(),
     ])
-
-      .catch((error) => {
-        console.log(`Error loading functions ${error}`);
-      })
-
+    .catch((error) => {
+      console.log(`Error loading functions ${error}`);
+    });
   }
 
   ngAfterViewInit(): void {
@@ -49,11 +45,10 @@ export class ProductUpdateFormComponent implements OnInit, AfterViewInit {
     return this.allCategories;
   }
 
-  getProductDetails(productId: any) {
-    this.productService.getProductDetails(productId)
-      .then((response) => {
-        this.currentProduct = response.data;
-      })
+  getProductDetails(productId: any): Promise<any> {
+    return this.productService.getProductDetails(productId).then((response) => {
+      this.currentProduct = response.data;
+    });
   }
 
   executeProductForm() {
@@ -69,16 +64,22 @@ export class ProductUpdateFormComponent implements OnInit, AfterViewInit {
       });
 
       if (this.validationService.validateProduct()) {
-        await axios.put(`${this.productService.getTargetUrl()}/${this.currentProduct.productId}`, {
-          productName: serializedData[`product-name`],
-          productDescription: serializedData[`product-description`],
-          productBrand: serializedData[`product-brand`],
-          productModel: serializedData[`product-model`],
-          productPrice: serializedData[`product-price`],
-          unitStock: serializedData[`unit-stock`],
-          discount: serializedData[`discount`],
-          productCategoryId: serializedData[`categoryId`]
-        })
+        await axios
+          .put(
+            `${this.productService.getTargetUrl()}/${
+              this.currentProduct.productId
+            }`,
+            {
+              productName: serializedData[`product-name`],
+              productDescription: serializedData[`product-description`],
+              productBrand: serializedData[`product-brand`],
+              productModel: serializedData[`product-model`],
+              productPrice: serializedData[`product-price`],
+              unitStock: serializedData[`unit-stock`],
+              discount: serializedData[`discount`],
+              productCategoryId: serializedData[`categoryId`],
+            }
+          )
           .then(() => {
             this.productService.redirectAllProducts();
           })
@@ -96,13 +97,8 @@ export class ProductUpdateFormComponent implements OnInit, AfterViewInit {
   }
 
   listAllCategories(): Promise<any> {
-    return new Promise(() => {
-      this.categoryService.collectAllCategories()
-        .then((response) => {
-          this.allCategories = response.data;
-        })
-    })
+    return this.categoryService.collectAllCategories().then((response) => {
+      this.allCategories = response.data;
+    });
   }
-
-
 }

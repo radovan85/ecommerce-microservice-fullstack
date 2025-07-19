@@ -11,34 +11,29 @@ import { RouterLink } from '@angular/router';
   standalone: true,
   imports: [RouterLink],
   templateUrl: './address-confirmation.component.html',
-  styleUrl: './address-confirmation.component.css'
+  styleUrl: './address-confirmation.component.css',
 })
 export class AddressConfirmationComponent implements OnInit, AfterViewInit {
-
-  private currentAddress: ShippingAddress = new ShippingAddress;
+  private currentAddress: ShippingAddress = new ShippingAddress();
   private orderService = inject(OrderService);
   private validationService = inject(ValidationService);
   private cartService = inject(CartService);
 
   ngOnInit(): void {
-    Promise.all([
-      this.provideMyAddress()
-    ])
-
-      .catch((error) => {
-        console.log(`Error loading functions  ${error}`);
-      })
+    Promise.all([this.provideMyAddress()])
+    .catch((error) => {
+      console.log(`Error loading functions  ${error}`);
+    });
   }
 
   ngAfterViewInit(): void {
     this.executeAddressForm();
   }
 
-  provideMyAddress() {
-    this.orderService.provideMyAddress()
-      .then((response) => {
-        this.currentAddress = response.data;
-      })
+  provideMyAddress(): Promise<any> {
+    return this.orderService.provideMyAddress().then((response) => {
+      this.currentAddress = response.data;
+    });
   }
 
   getCurrentAddress(): ShippingAddress {
@@ -46,10 +41,10 @@ export class AddressConfirmationComponent implements OnInit, AfterViewInit {
   }
 
   executeAddressForm() {
-    //var targetUrl = `http://localhost:8080/api/order/confirmShippingAddress`;
-    var form = document.getElementById(`shippingAddressForm`) as HTMLFormElement;
+    var form = document.getElementById(
+      `shippingAddressForm`
+    ) as HTMLFormElement;
     form.addEventListener(`submit`, async (event) => {
-
       event.preventDefault();
 
       var formData = new FormData(form);
@@ -59,13 +54,14 @@ export class AddressConfirmationComponent implements OnInit, AfterViewInit {
       });
 
       if (this.validationService.validateShippingAddress()) {
-        axios.put(`${this.orderService.getTargetUrl()}/confirmShippingAddress`, {
-          address: serializedData[`address`],
-          city: serializedData[`city`],
-          state: serializedData[`state`],
-          postcode: serializedData[`postcode`],
-          country: serializedData[`country`]
-        })
+        axios
+          .put(`${this.orderService.getTargetUrl()}/confirmShippingAddress`, {
+            address: serializedData[`address`],
+            city: serializedData[`city`],
+            state: serializedData[`state`],
+            postcode: serializedData[`postcode`],
+            country: serializedData[`country`],
+          })
 
           .then(() => {
             this.orderService.redirectPhoneConfirmation();
@@ -74,15 +70,12 @@ export class AddressConfirmationComponent implements OnInit, AfterViewInit {
           .catch((error) => {
             console.log(error);
             alert(`Failed`);
-          })
+          });
       }
-    })
+    });
   }
 
   redirectCart() {
     this.cartService.redirectCart();
   }
-
-
-
 }
