@@ -1,0 +1,42 @@
+# Terraform state
+*.tfstate
+*.tfstate.backup
+
+# Crash log files
+crash.log
+
+# Terraform plan output
+*.tfplan
+
+# Sensitive override files
+*.tfvars
+*.tfvars.json
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Provider lock files
+.terraform.lock.hcl
+
+# CLI working directory
+.terraform/
+
+# VSCode settings (ako koristiš VSCode)
+.vscode/
+
+# Executables i skripte za deployment
+*.exe
+*.sh
+*.bat
+*.pyc
+__pycache__/
+
+# Logovi
+*.log
+
+# IDE fajlovi
+.idea/
+*.iml
+.DS_Store
+Thumbs.db

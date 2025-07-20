@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: angular-ecommerce
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: angular-ecommerce
+  template:
+    metadata:
+      labels:
+        app: angular-ecommerce
+    spec:
+      initContainers:
+        - name: wait-for-api-gateway
+          image: busybox
+          command:
+            - sh
+            - -c
+            - >
+              until wget --spider --timeout=2 http://api-gateway:8080/api/health;
+              do echo waiting for api-gateway; sleep 2; done
+      containers:
+        - name: angular-ecommerce
+          image: ghcr.io/radovan85/angular-ecommerce:dev3
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 4200
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 4200
+            initialDelaySeconds: 10
+            periodSeconds: 5

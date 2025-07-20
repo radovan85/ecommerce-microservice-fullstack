@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-config
+  namespace: default
+data:
+  grafana.ini: |
+    [security]
+    admin_user = admin
+    admin_password = admin
+
+    [server]
+    http_port = 3000
+    root_url = http://localhost:3001/
