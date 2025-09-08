@@ -1,14 +1,16 @@
 package com.radovan.play.utils;
 
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
+import jakarta.inject.Singleton;
 import org.hibernate.SessionFactory;
-import org.hibernate.cfg.Configuration;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
-
-import jakarta.inject.Singleton;
+import org.hibernate.cfg.Configuration;
 
 @Singleton
 public class HibernateUtil {
+
     private final SessionFactory sessionFactory;
 
     public HibernateUtil() {
@@ -17,32 +19,44 @@ public class HibernateUtil {
 
     private SessionFactory buildSessionFactory() {
         try {
-            // Kreiraj Configuration instancu
-            Configuration configuration = new Configuration();
+            // 🔧 Hikari konfiguracija
+            HikariConfig hikariConfig = new HikariConfig();
+            hikariConfig.setDriverClassName("org.postgresql.Driver");
+            hikariConfig.setJdbcUrl("jdbc:postgresql://localhost:5432/ecommerce-db");
+            hikariConfig.setUsername("postgres");
+            hikariConfig.setPassword("1111");
+            hikariConfig.setMaximumPoolSize(10);
+            hikariConfig.setMinimumIdle(2);
+            hikariConfig.setIdleTimeout(600000);
+            hikariConfig.setConnectionTimeout(30000);
+            hikariConfig.setMaxLifetime(1800000);
 
-            // Postavi Hibernate properties
-            configuration.setProperty("hibernate.connection.driver_class", "org.postgresql.Driver");
-            configuration.setProperty("hibernate.connection.url", "jdbc:postgresql://localhost:5432/ecommerce-db");
-            configuration.setProperty("hibernate.connection.username", "postgres");
-            configuration.setProperty("hibernate.connection.password", "1111");
-            configuration.setProperty("hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect");
+            HikariDataSource dataSource = new HikariDataSource(hikariConfig);
+
+            // 🧠 Hibernate konfiguracija
+            Configuration configuration = new Configuration();
+            configuration.getProperties().put("hibernate.connection.datasource", dataSource);
             configuration.setProperty("hibernate.hbm2ddl.auto", "update");
             configuration.setProperty("hibernate.show_sql", "false");
             configuration.setProperty("hibernate.format_sql", "false");
+            configuration.setProperty("hibernate.boot.allow_jdbc_metadata_access", "false");
+            configuration.setProperty("hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect");
 
-            // Dodaj anotirane klase
-            configuration.addAnnotatedClass(com.radovan.play.entity.ProductEntity.class);
+
+            // ➕ Dodaj sve entity klase
             configuration.addAnnotatedClass(com.radovan.play.entity.ProductCategoryEntity.class);
             configuration.addAnnotatedClass(com.radovan.play.entity.ProductImageEntity.class);
+            configuration.addAnnotatedClass(com.radovan.play.entity.ProductEntity.class);
+            // Dodaj još po potrebi...
 
-            // Napravi SessionFactory iz service registry
+            // 🧱 SessionFactory setup
             StandardServiceRegistry serviceRegistry = new StandardServiceRegistryBuilder()
                     .applySettings(configuration.getProperties())
                     .build();
 
             return configuration.buildSessionFactory(serviceRegistry);
         } catch (Throwable ex) {
-            System.err.println("Initial SessionFactory creation failed." + ex);
+            System.err.println("Initial SessionFactory creation failed: " + ex);
             throw new ExceptionInInitializerError(ex);
         }
     }

@@ -12,3 +12,6 @@ DELETE /api/order/:id              com.radovan.play.controllers.OrderController.
 
 #Health
 GET     /api/health     com.radovan.play.controllers.HealthController.healthCheck(request:Request)
+
+#metrics
+GET   /prometheus   com.radovan.play.controllers.PrometheusController.getMetrics

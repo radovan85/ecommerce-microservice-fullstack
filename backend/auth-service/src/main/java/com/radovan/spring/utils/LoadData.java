@@ -4,14 +4,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import com.radovan.spring.repositories.RoleRepository;
+import com.radovan.spring.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import com.radovan.spring.entity.RoleEntity;
 import com.radovan.spring.entity.UserEntity;
-import com.radovan.spring.repositories.RoleRepository;
-import com.radovan.spring.repositories.UserRepository;
 
 @Component
 public class LoadData {
@@ -64,7 +64,7 @@ public class LoadData {
 				List<UserEntity> users = new ArrayList<UserEntity>();
 				users.add(storedAdmin);
 				roleEntity.setUsers(users);
-				roleRepository.saveAndFlush(roleEntity);
+				roleRepository.save(roleEntity);
 			} catch (Exception exc) {
 				System.out.println("Admin already added");
 			}

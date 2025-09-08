@@ -2,6 +2,7 @@ package com.radovan.spring.controllers;
 
 import java.util.List;
 
+import com.radovan.spring.utils.TokenUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -34,7 +35,7 @@ public class CustomerController {
 	@PreAuthorize(value = "hasAuthority('ROLE_USER')")
 	@GetMapping(value = "/getCurrentCustomer")
 	public ResponseEntity<CustomerDto> getCurrentCustomer() {
-		CustomerDto customer = customerService.getCurrentCustomer();
+		CustomerDto customer = customerService.getCurrentCustomer(TokenUtils.provideToken());
 		return new ResponseEntity<>(customer, HttpStatus.OK);
 	}
 
@@ -79,7 +80,7 @@ public class CustomerController {
 	@PreAuthorize(value = "hasAuthority('ROLE_ADMIN')")
 	@DeleteMapping(value = "/{customerId}")
 	public ResponseEntity<String> deleteCustomer(@PathVariable("customerId") Integer customerId) {
-		customerService.removeCustomer(customerId);
+		customerService.removeCustomer(customerId, TokenUtils.provideToken());
 		return new ResponseEntity<>("The customer with id " + customerId + " has been permanently deleted!",
 				HttpStatus.OK);
 	}
@@ -87,14 +88,14 @@ public class CustomerController {
 	@PreAuthorize(value = "hasAuthority('ROLE_ADMIN')")
 	@PutMapping(value = "/suspend/{customerId}")
 	public ResponseEntity<String> suspendCustomer(@PathVariable("customerId") Integer customerId) {
-		customerService.suspendCustomer(customerId);
+		customerService.suspendCustomer(customerId,TokenUtils.provideToken());
 		return new ResponseEntity<>("The customer with id " + customerId + " has been suspended!", HttpStatus.OK);
 	}
 
 	@PreAuthorize(value = "hasAuthority('ROLE_ADMIN')")
 	@PutMapping(value = "/reactivate/{customerId}")
 	public ResponseEntity<String> reactivateCustomer(@PathVariable("customerId") Integer customerId) {
-		customerService.reactivateCustomer(customerId);
+		customerService.reactivateCustomer(customerId,TokenUtils.provideToken());
 		return new ResponseEntity<>("The customer with id " + customerId + " has been reactivated!", HttpStatus.OK);
 	}
 }

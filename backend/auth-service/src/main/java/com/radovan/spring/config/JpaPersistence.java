@@ -5,7 +5,6 @@ import java.util.Properties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.dao.annotation.PersistenceExceptionTranslationPostProcessor;
-import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.orm.jpa.JpaVendorAdapter;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
@@ -15,9 +14,10 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 import com.zaxxer.hikari.HikariDataSource;
 
+import jakarta.persistence.EntityManagerFactory;
+
 @Configuration
 @EnableTransactionManagement
-@EnableJpaRepositories(basePackages = "com.radovan.spring.repositories")
 public class JpaPersistence {
 
     @Bean
@@ -30,24 +30,27 @@ public class JpaPersistence {
         em.setJpaVendorAdapter(vendorAdapter);
         em.setJpaProperties(additionalProperties());
 
+        // Postavljanje interfejsa EntityManagerFactory
+        em.setEntityManagerFactoryInterface(EntityManagerFactory.class);
+
         return em;
     }
 
+
     @Bean
     public HikariDataSource getHikariDataSource() {
-        HikariDataSource returnValue = new HikariDataSource();
-        returnValue.setDriverClassName("org.postgresql.Driver");
-        returnValue.setJdbcUrl("jdbc:postgresql://localhost:5432/ecommerce-db");
-        returnValue.setUsername("postgres");
-        returnValue.setPassword("1111");
-        return returnValue;
+        HikariDataSource dataSource = new HikariDataSource();
+        dataSource.setDriverClassName("org.postgresql.Driver");
+        dataSource.setJdbcUrl("jdbc:postgresql://localhost:5432/ecommerce-db");
+        dataSource.setUsername("postgres");
+        dataSource.setPassword("1111");
+        return dataSource;
     }
 
     @Bean
     public PlatformTransactionManager transactionManager() {
         JpaTransactionManager transactionManager = new JpaTransactionManager();
         transactionManager.setEntityManagerFactory(entityManagerFactory().getObject());
-
         return transactionManager;
     }
 
@@ -56,9 +59,10 @@ public class JpaPersistence {
         return new PersistenceExceptionTranslationPostProcessor();
     }
 
-    Properties additionalProperties() {
+    private Properties additionalProperties() {
         Properties properties = new Properties();
-        properties.setProperty("hibernate.hbm2ddl.auto", "update");
+        properties.setProperty("hibernate.hbm2ddl.auto", "update"); // Kontrola kreiranja šeme
+        properties.setProperty("hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect"); // Dialekt baze
         return properties;
     }
 }

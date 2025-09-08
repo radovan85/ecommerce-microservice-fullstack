@@ -64,7 +64,6 @@ public class PublicKeyCache {
 
     private String fetchPublicKeyFromAuthService() throws Exception {
         String url = urlProvider.getAuthServiceUrl() + "/api/auth/public-key";
-        logger.debug("Fetching public key from: {}", url);
 
         WSResponse response = wsClient.url(url)
                 .setRequestTimeout(5000)

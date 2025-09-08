@@ -101,7 +101,8 @@ public class SecurityFilter extends Filter {
 
     public List<String> getUnsecuredRoutes(){
         return List.of(
-                "/api/health"
+                "/api/health",
+                "/prometheus"
         ); // for routes without security checking
     }
 

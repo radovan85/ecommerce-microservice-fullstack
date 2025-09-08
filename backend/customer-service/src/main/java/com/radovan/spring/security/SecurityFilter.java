@@ -90,7 +90,7 @@ public class SecurityFilter extends OncePerRequestFilter {
 	}
 
 	private List<String> getUnsecuredRoutes() {
-		return List.of("/api/health","/api/customers/register"); // for routes without security checking
+		return List.of("/api/health","/api/customers/register","/prometheus"); // for routes without security checking
 	}
 
 	private boolean isPublicRoute(HttpServletRequest request) {

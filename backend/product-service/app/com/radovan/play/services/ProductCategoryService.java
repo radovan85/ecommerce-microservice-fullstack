@@ -13,7 +13,7 @@ public interface ProductCategoryService {
 
     ProductCategoryDto updateCategory(ProductCategoryDto category, Integer categoryId);
 
-    void deleteCategory(Integer categoryId);
+    void deleteCategory(Integer categoryId,String jwtToken);
 
     List<ProductCategoryDto> listAll();
 }

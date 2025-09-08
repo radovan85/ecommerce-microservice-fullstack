@@ -19,7 +19,6 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -45,14 +44,13 @@ public class UserServiceImpl implements UserService {
 	}
 
 	@Override
-	@Transactional(readOnly = true)
+
 	public List<UserDto> listAll() {
 		List<UserEntity> allUsers = userRepository.findAll();
 		return allUsers.stream().map(tempConverter::userEntityToDto).collect(Collectors.toList());
 	}
 
 	@Override
-	@Transactional(readOnly = true)
 	public UserDto getCurrentUser() {
 		UserDto returnValue = null;
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -74,7 +72,6 @@ public class UserServiceImpl implements UserService {
 	}
 
 	@Override
-	@Transactional(readOnly = true)
 	public UserDto getUserById(Integer userId) {
 		UserEntity userEntity = userRepository.findById(userId)
 				.orElseThrow(() -> new InstanceUndefinedException(new Error("The user has not been found!")));
@@ -82,7 +79,6 @@ public class UserServiceImpl implements UserService {
 	}
 
 	@Override
-	@Transactional(readOnly = true)
 	public UserDto getUserByEmail(String email) {
 		UserEntity userEntity = userRepository.findByEmail(email)
 				.orElseThrow(() -> new InstanceUndefinedException(new Error("Invalid user!")));
@@ -90,7 +86,6 @@ public class UserServiceImpl implements UserService {
 	}
 
 	@Override
-	@Transactional(readOnly = true)
 	public Optional<Authentication> authenticateUser(String username, String password) {
 		UsernamePasswordAuthenticationToken authReq = new UsernamePasswordAuthenticationToken(username, password);
 		Optional<UserEntity> userOptional = userRepository.findByEmail(username);
@@ -106,7 +101,6 @@ public class UserServiceImpl implements UserService {
 	}
 
 	@Override
-	@Transactional(readOnly = true)
 	public Boolean isAdmin() {
 		Boolean returnValue = false;
 		UserDto currentUser = getCurrentUser();
@@ -122,7 +116,6 @@ public class UserServiceImpl implements UserService {
 	}
 
 	@Override
-	@Transactional(readOnly = true)
 	public Boolean isAdmin(Integer userId) {
 		Boolean returnValue = false;
 		UserDto user = getUserById(userId);
@@ -138,7 +131,6 @@ public class UserServiceImpl implements UserService {
 	}
 
 	@Override
-	@Transactional
 	public void suspendUser(Integer userId) {
 		UserDto user = getUserById(userId);
 		if (isAdmin(user.getId())) {
@@ -146,11 +138,10 @@ public class UserServiceImpl implements UserService {
 					new Error("This operation is not allowed!The user has Admin authority!"));
 		}
 		user.setEnabled((short) 0);
-		userRepository.saveAndFlush(tempConverter.userDtoToEntity(user));
+		userRepository.save(tempConverter.userDtoToEntity(user));
 	}
 
 	@Override
-	@Transactional
 	public void reactivateUser(Integer userId) {
 		UserDto user = getUserById(userId);
 		if (isAdmin(user.getId())) {
@@ -158,11 +149,10 @@ public class UserServiceImpl implements UserService {
 					new Error("This operation is not allowed!The user has Admin authority!"));
 		}
 		user.setEnabled((short) 1);
-		userRepository.saveAndFlush(tempConverter.userDtoToEntity(user));
+		userRepository.save(tempConverter.userDtoToEntity(user));
 	}
 
 	@Override
-	@Transactional
 	public UserDto addUser(UserDto user) {
 		Optional<UserEntity> userOptional = userRepository.findByEmail(user.getEmail());
 		if (userOptional.isPresent()) {
@@ -177,18 +167,10 @@ public class UserServiceImpl implements UserService {
 		UserEntity userEntity = tempConverter.userDtoToEntity(user);
 		userEntity.setRoles(roles);
 		UserEntity storedUser = userRepository.save(userEntity);
-		List<UserEntity> users = roleEntity.getUsers();
-		if (users == null) {
-			users = new ArrayList<>();
-		}
-		users.add(storedUser);
-		roleEntity.setUsers(users);
-		roleRepository.save(roleEntity);
 		return tempConverter.userEntityToDto(storedUser);
 	}
 
 	@Override
-	@Transactional
 	public void deleteUser(Integer userId) {
 		getUserById(userId);
 		if (isAdmin(userId)) {
@@ -196,7 +178,7 @@ public class UserServiceImpl implements UserService {
 					new Error("This operation is not allowed!The user has Admin authority!"));
 		}
 		userRepository.deleteById(userId);
-		userRepository.flush();
+
 
 	}
 

@@ -14,12 +14,12 @@ public interface CartItemService {
 
 	CartItemDto getItemById(Integer itemId);
 
-	CartItemDto addCartItem(Integer productId);
+	CartItemDto addCartItem(Integer productId,String jwtToken);
 
-	void removeCartItem(Integer itemId);
+	void removeCartItem(Integer itemId,String jwtToken);
 
 	List<CartItemDto> listAllByProductId(Integer productId);
 
-	void updateAllByProductId(Integer productId);
+	void updateAllByProductId(Integer productId,String jwtToken);
 
 }

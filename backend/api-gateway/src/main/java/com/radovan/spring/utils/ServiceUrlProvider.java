@@ -52,6 +52,10 @@ public class ServiceUrlProvider {
 		return getServiceUrl("product-service");
 	}
 
+	public String getGatewayServiceUrl() {
+		return getServiceUrl("api-gateway");
+	}
+
 	private void validateUrl(String url, String serviceName) {
 		if (url == null || !url.startsWith("http")) {
 			throw new IllegalArgumentException("Invalid URL for " + serviceName + ": " + url);

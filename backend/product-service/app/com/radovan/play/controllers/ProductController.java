@@ -9,6 +9,7 @@ import com.radovan.play.security.JwtAuthAction;
 import com.radovan.play.security.RoleSecured;
 import com.radovan.play.services.ProductImageService;
 import com.radovan.play.services.ProductService;
+import com.radovan.play.utils.TokenUtils;
 import jakarta.inject.Inject;
 import play.data.Form;
 import play.data.FormFactory;
@@ -65,7 +66,7 @@ public class ProductController extends Controller {
             throw new DataNotValidatedException("Product data is not valid!");
         }
         ProductDto productDto = form.get();
-        ProductDto updatedProduct = productService.updateProduct(productDto, id);
+        ProductDto updatedProduct = productService.updateProduct(productDto, id, TokenUtils.provideToken(request));
         String jwtToken = request.headers().get("Authorization").orElse(null);
         System.out.println("JWT Token: " + jwtToken);
         productNatsSender.sendCartUpdateRequest(id,jwtToken);
@@ -73,8 +74,8 @@ public class ProductController extends Controller {
     }
 
     @RoleSecured({"ROLE_ADMIN"})
-    public Result deleteProduct(Integer id) {
-        productService.deleteProduct(id);
+    public Result deleteProduct(Http.Request request,Integer id) {
+        productService.deleteProduct(id,TokenUtils.provideToken(request));
         return ok("Product deleted successfully");
     }
 
@@ -97,7 +98,6 @@ public class ProductController extends Controller {
 
 
     public Result getAllImages(){
-        System.out.println("Get all images pozvan");
         List<ProductImageDto> allImages = imageService.listAll();
         return ok(Json.toJson(allImages));
     }

@@ -40,7 +40,6 @@ public class EurekaRegistrationServiceImpl implements EurekaRegistrationService 
     @Override
     public void registerService() {
         try {
-            System.out.println("Starting service registration...");
 
             // Dinamičko dohvaćanje IP adrese i hostname-a
             String hostname = InetAddress.getLocalHost().getHostName();
@@ -59,14 +58,12 @@ public class EurekaRegistrationServiceImpl implements EurekaRegistrationService 
             instanceData.put("hostName", hostname);
             instanceData.put("ipAddr", ipAddr);
             instanceData.put("statusPageUrl", "http://" + ipAddr + ":" + port + "/info");
-            instanceData.put("healthCheckUrl", "http://" + ipAddr + ":" + port + "/health");
+            instanceData.put("healthCheckUrl", "http://" + ipAddr + ":" + port + "/api/health");
             instanceData.put("homePageUrl", "http://" + ipAddr + ":" + port + "/");
             instanceData.put("vipAddress", appName);
             instanceData.put("secureVipAddress", appName);
             instanceData.put("leaseRenewalIntervalInSeconds", 30);
             instanceData.put("leaseExpirationDurationInSeconds", 90);
-
-            System.out.println("Instance data: " + instanceData);
 
             // Dodavanje porta
             Map<String, Object> portMap = new HashMap<>();
@@ -94,11 +91,9 @@ public class EurekaRegistrationServiceImpl implements EurekaRegistrationService 
 
             // Konverzija u JSONNode
             JsonNode jsonPayload = objectMapper.valueToTree(registrationData);
-            System.out.println("JSON payload: " + jsonPayload);
 
             // Slanje POST zahteva ka Eureka serveru
             String registrationUrl = EUREKA_SERVER_URL + "/" + appName;
-            System.out.println("Sending POST request to: " + registrationUrl);
 
             wsClient.url(registrationUrl)
                     .addHeader("Content-Type", "application/json")

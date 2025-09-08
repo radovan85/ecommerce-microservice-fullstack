@@ -2,9 +2,9 @@ package com.radovan.spring.services.impl;
 
 import java.util.List;
 
+import com.radovan.spring.utils.TokenUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.radovan.spring.broker.CartNatsSender;
@@ -35,7 +35,6 @@ public class CartServiceImpl implements CartService {
 	}
 
 	@Override
-	@Transactional(readOnly = true)
 	public CartDto getCartById(Integer cartId) {
 		CartEntity cartEntity = cartRepository.findById(cartId)
 				.orElseThrow(() -> new InstanceUndefinedException(new Error("The cart has not been found")));
@@ -44,7 +43,6 @@ public class CartServiceImpl implements CartService {
 	}
 
 	@Override
-	@Transactional(readOnly = true)
 	public CartDto validateCart(Integer cartId) {
 		CartDto cart = getCartById(cartId);
 		if (cart.getCartItemsIds().isEmpty()) {
@@ -54,25 +52,21 @@ public class CartServiceImpl implements CartService {
 	}
 
 	@Override
-	@Transactional
 	public void refreshCartState(Integer cartId) {
 		CartDto cart = getCartById(cartId);
 		Float cartPrice = cartRepository.calculateCartPrice(cartId).orElse(0f);
 		cart.setCartPrice(cartPrice);
-		cartRepository.saveAndFlush(tempConverter.cartDtoToEntity(cart));
+		cartRepository.save(tempConverter.cartDtoToEntity(cart));
 	}
 
 	@Override
-	@Transactional
 	public void refreshAllCarts() {
 		List<CartEntity> allCarts = cartRepository.findAll();
 		allCarts.forEach(cartEntity -> refreshCartState(cartEntity.getCartId()));
 	}
 
 	@Override
-	@Transactional
 	public CartDto addCart() {
-		// TODO Auto-generated method stub
 		CartDto cartDto = new CartDto();
 		cartDto.setCartPrice(0f);
 		CartEntity storedCart = cartRepository.save(tempConverter.cartDtoToEntity(cartDto));
@@ -80,18 +74,14 @@ public class CartServiceImpl implements CartService {
 	}
 
 	@Override
-	@Transactional
 	public void deleteCart(Integer cartId) {
 		getCartById(cartId);
 		cartRepository.deleteById(cartId);
-		cartRepository.flush();
 	}
 
 	@Override
-	@Transactional
 	public void clearCart() {
-		// TODO Auto-generated method stub
-		JsonNode customerData = cartNatsSender.retrieveCurrentCustomer();
+		JsonNode customerData = cartNatsSender.retrieveCurrentCustomer(TokenUtils.provideToken());
 		Integer cartId = customerData.get("cartId").asInt();
 		cartItemService.removeAllByCartId(cartId);
 		refreshCartState(cartId);

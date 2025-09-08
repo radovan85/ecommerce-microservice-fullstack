@@ -1,148 +1,158 @@
 package com.radovan.spring.broker;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.radovan.spring.dto.CustomerDto;
 import com.radovan.spring.dto.ShippingAddressDto;
 import com.radovan.spring.services.CustomerService;
 import com.radovan.spring.services.ShippingAddressService;
-import com.radovan.spring.utils.JwtUtil;
 import com.radovan.spring.utils.NatsUtils;
 import io.nats.client.Dispatcher;
 import io.nats.client.Message;
-import io.nats.client.impl.Headers;
+import io.nats.client.MessageHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
 @Component
 public class CustomerNatsListener {
 
-    private static final String SHIPPING_ADDRESS_PREFIX = "shippingAddress.get.";
-    private static final String SHIPPING_ADDRESS_UPDATE_PREFIX = "shippingAddress.update.";
-    
-    private final NatsUtils natsUtils;
-    private final CustomerService customerService;
-    private final ShippingAddressService shippingAddressService;
-    private final ObjectMapper objectMapper;
-    private final JwtUtil jwtUtil;
+    private static final Logger logger = LoggerFactory.getLogger(CustomerNatsListener.class);
+
+    private NatsUtils natsUtils;
+    private ObjectMapper objectMapper;
+    private CustomerService customerService;
+    private ShippingAddressService addressService;
+
 
     @Autowired
-    public CustomerNatsListener(NatsUtils natsUtils, CustomerService customerService,
-                              ShippingAddressService shippingAddressService,
-                              ObjectMapper objectMapper, JwtUtil jwtUtil) {
+    private void initialize(NatsUtils natsUtils, ObjectMapper objectMapper,
+                            CustomerService customerService, ShippingAddressService addressService) {
         this.natsUtils = natsUtils;
-        this.customerService = customerService;
-        this.shippingAddressService = shippingAddressService;
         this.objectMapper = objectMapper;
-        this.jwtUtil = jwtUtil;
-        initListeners();
+        this.customerService = customerService;
+        this.addressService = addressService;
+        init();
     }
 
-    private void initListeners() {
-        Dispatcher dispatcher = natsUtils.getConnection().createDispatcher(this::handleMessage);
-        dispatcher.subscribe("customer.get");
-        dispatcher.subscribe(SHIPPING_ADDRESS_PREFIX + "*");
-        dispatcher.subscribe(SHIPPING_ADDRESS_UPDATE_PREFIX + "*");
+    public void init() {
+        Dispatcher dispatcher = natsUtils.getConnection().createDispatcher();
+        dispatcher.subscribe("customer.getCurrent", onGetCurrentCustomer);
+        dispatcher.subscribe("address.getAddress.*", getAddressNode);
+        dispatcher.subscribe("address.update.*", onAddressUpdate);
     }
 
-    private void handleMessage(Message msg) {
-        String token = extractTokenFromHeaders(msg);
-        if (token == null || !jwtUtil.validateToken(token)) {
-            sendErrorResponse(msg.getReplyTo(), "Invalid or missing token", HttpStatus.FORBIDDEN);
-            return;
-        }
-
-        authenticateUser(token);
-        
-        if (msg.getSubject().equals("customer.get")) {
-            processCustomerRequest(msg.getReplyTo());
-        } else if (msg.getSubject().startsWith(SHIPPING_ADDRESS_PREFIX)) {
-            processShippingAddressRequest(msg);
-        } else if (msg.getSubject().startsWith(SHIPPING_ADDRESS_UPDATE_PREFIX)) {
-            processShippingAddressUpdate(msg);
-        }
-    }
-
-    private void processShippingAddressUpdate(Message msg) {
+    private final MessageHandler onGetCurrentCustomer = (Message msg) -> {
         try {
-            Integer addressId = extractIdFromSubject(msg.getSubject(), SHIPPING_ADDRESS_UPDATE_PREFIX);
-            ShippingAddressDto addressDto = objectMapper.readValue(msg.getData(), ShippingAddressDto.class);
-            ShippingAddressDto updatedAddress = shippingAddressService.updateAddress(addressDto, addressId);
-            sendSuccessResponse(msg.getReplyTo(), "shippingAddress", updatedAddress);
-        } catch (Exception e) {
-            sendErrorResponse(msg.getReplyTo(), "Error updating shipping address", HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
+            JsonNode payload = objectMapper.readTree(msg.getData());
+            String jwtToken = Optional.ofNullable(payload.get("token"))
+                    .map(JsonNode::asText)
+                    .orElseThrow(() -> new RuntimeException("Missing token in customer.getCurrent payload"));
 
-    private void processCustomerRequest(String replyTo) {
-        try {
-            CustomerDto customer = customerService.getCurrentCustomer();
-            sendSuccessResponse(replyTo, "customer", customer);
-        } catch (Exception e) {
-            sendErrorResponse(replyTo, "Error processing customer request", HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
+            CustomerDto currentCustomer = customerService.getCurrentCustomer(jwtToken);
+            String replyTo = Optional.ofNullable(msg.getReplyTo()).orElse("customer.response");
 
-    private void processShippingAddressRequest(Message msg) {
-        try {
-            Integer addressId = extractIdFromSubject(msg.getSubject(), SHIPPING_ADDRESS_PREFIX);
-            ShippingAddressDto address = shippingAddressService.getAddressById(addressId);
-            sendSuccessResponse(msg.getReplyTo(), "shippingAddress", address);
-        } catch (Exception e) {
-            sendErrorResponse(msg.getReplyTo(), "Error retrieving shipping address", HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
+            publishSafely(replyTo, objectMapper.writeValueAsBytes(currentCustomer));
 
-    private Integer extractIdFromSubject(String subject, String prefix) {
-        return Integer.parseInt(subject.replace(prefix, ""));
-    }
-
-    private void sendSuccessResponse(String replyTo, String fieldName, Object data) {
-        try {
-            ObjectNode responseNode = objectMapper.createObjectNode();
-            responseNode.putPOJO(fieldName, data);
-            natsUtils.getConnection().publish(replyTo, objectMapper.writeValueAsBytes(responseNode));
-        } catch (Exception e) {
-            sendErrorResponse(replyTo, "Error formatting response", HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    private String extractTokenFromHeaders(Message msg) {
-        Headers headers = msg.getHeaders();
-        if (headers == null) return null;
-        
-        String authHeader = headers.getFirst("Authorization");
-        return authHeader != null ? authHeader.replace("Bearer ", "").trim() : null;
-    }
-
-    private void authenticateUser(String token) {
-        String userId = jwtUtil.extractUsername(token).orElseThrow();
-        List<GrantedAuthority> authorities = jwtUtil.extractRoles(token)
-                .orElse(List.of())
-                .stream()
-                .map(SimpleGrantedAuthority::new)
-                .collect(Collectors.toUnmodifiableList());
-
-        SecurityContextHolder.getContext()
-                .setAuthentication(new UsernamePasswordAuthenticationToken(userId, token, authorities));
-    }
-
-    private void sendErrorResponse(String replyTo, String message, HttpStatus status) {
-        if (replyTo == null) return;
-        
-        try {
+        } catch (Exception ex) {
             ObjectNode errorNode = objectMapper.createObjectNode();
-            errorNode.put("status", status.value());
-            errorNode.put("message", message);
-            natsUtils.getConnection().publish(replyTo, objectMapper.writeValueAsBytes(errorNode));
-        } catch (Exception ignored) {}
+            errorNode.put("status", 500);
+            errorNode.put("error", "Failed to retrieve current customer: " + ex.getMessage());
+            String replyTo = Optional.ofNullable(msg.getReplyTo()).orElse("customer.response");
+            publishSafely(replyTo, safeBytes(errorNode));
+        }
+    };
+
+    private final MessageHandler getAddressNode = (Message msg) -> {
+        try {
+            JsonNode payload = objectMapper.readTree(msg.getData());
+            String jwtToken = Optional.ofNullable(payload.get("token"))
+                    .map(JsonNode::asText)
+                    .orElseThrow(() -> new RuntimeException("Missing token in address.getAddress payload"));
+
+            int addressId = extractIdFromSubject(msg.getSubject(), "address.getAddress.");
+            ShippingAddressDto address = addressService.getAddressById(addressId);
+            String replyTo = Optional.ofNullable(msg.getReplyTo()).orElse("address.response");
+
+            publishSafely(replyTo, objectMapper.writeValueAsBytes(address));
+
+        } catch (Exception ex) {
+            ObjectNode errorNode = objectMapper.createObjectNode();
+            errorNode.put("status", 500);
+            errorNode.put("error", "Failed to retrieve address: " + ex.getMessage());
+            String replyTo = Optional.ofNullable(msg.getReplyTo()).orElse("address.response");
+            publishSafely(replyTo, safeBytes(errorNode));
+        }
+    };
+
+    private final MessageHandler onAddressUpdate = (Message msg) -> {
+        try {
+            int addressId = extractIdFromSubject(msg.getSubject(), "address.update.");
+            JsonNode payload = objectMapper.readTree(msg.getData());
+
+            String jwtToken = Optional.ofNullable(payload.get("Authorization"))
+                    .map(JsonNode::asText)
+                    .orElseThrow(() -> new RuntimeException("Missing Authorization token in address.update payload"));
+
+            JsonNode addressNode = Optional.ofNullable(payload.get("address"))
+                    .orElseThrow(() -> new RuntimeException("Missing address node in payload"));
+
+            ShippingAddressDto dto = objectMapper.treeToValue(addressNode, ShippingAddressDto.class);
+            dto.setShippingAddressId(addressId);
+
+            ShippingAddressDto updatedAddress = addressService.updateAddress(dto, addressId);
+
+            ObjectNode responseNode = objectMapper.createObjectNode();
+            responseNode.put("status", 200);
+            responseNode.set("address", objectMapper.valueToTree(updatedAddress));
+
+            String replyTo = Optional.ofNullable(msg.getReplyTo()).orElse("address.response");
+            publishSafely(replyTo, safeBytes(responseNode));
+
+        } catch (Exception ex) {
+            ObjectNode errorNode = objectMapper.createObjectNode();
+            errorNode.put("status", 500);
+            errorNode.put("message", "Address update failed: " + ex.getMessage());
+            String replyTo = Optional.ofNullable(msg.getReplyTo()).orElse("address.response");
+            publishSafely(replyTo, safeBytes(errorNode));
+        }
+    };
+
+    private int extractIdFromSubject(String subject, String prefix) {
+        try {
+            return Integer.parseInt(subject.replace(prefix, ""));
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
+    // ✅ Helper za sigurno publish-ovanje
+    private void publishSafely(String subject, byte[] payload) {
+        try {
+            natsUtils.getConnection().publish(subject, payload);
+        } catch (Exception e) {
+            logger.error("❌ Failed to publish to {}: {}", subject, e.getMessage());
+        }
+    }
+
+    // ✅ Helper za sigurno pretvaranje u byte[]
+    private byte[] safeBytes(ObjectNode node) {
+        try {
+            return objectMapper.writeValueAsBytes(node);
+        } catch (JsonProcessingException e) {
+            ObjectNode fallback = objectMapper.createObjectNode();
+            fallback.put("status", 500);
+            fallback.put("error", "Serialization error: " + e.getMessage());
+            try {
+                return objectMapper.writeValueAsBytes(fallback);
+            } catch (JsonProcessingException ex) {
+                return "{\"status\":500,\"error\":\"Unrecoverable serialization error\"}".getBytes();
+            }
+        }
     }
 }

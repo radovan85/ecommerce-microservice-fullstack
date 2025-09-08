@@ -3,143 +3,193 @@ package com.radovan.spring.broker;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.radovan.spring.exceptions.SuspendedUserException;
+import com.radovan.spring.exceptions.ExistingInstanceException;
 import com.radovan.spring.utils.NatsUtils;
 import io.nats.client.Message;
 import io.nats.client.impl.Headers;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
+
+import java.time.Duration;
 
 @Component
 public class CustomerNatsSender {
 
-	private static final int REQUEST_TIMEOUT_SECONDS = 5;
-	private static final String USER_RESPONSE_QUEUE = "user.response";
+    private static final String USER_RESPONSE_QUEUE = "user.response";
 
-	private final NatsUtils natsUtils;
-	private final ObjectMapper objectMapper;
+    private  NatsUtils natsUtils;
+    private  ObjectMapper objectMapper;
 
-	@Autowired
-	public CustomerNatsSender(NatsUtils natsUtils, ObjectMapper objectMapper) {
-		this.natsUtils = natsUtils;
-		this.objectMapper = objectMapper;
-	}
+    @Autowired
+    private void initialize(NatsUtils natsUtils, ObjectMapper objectMapper) {
+        this.natsUtils = natsUtils;
+        this.objectMapper = objectMapper;
+    }
 
-	public JsonNode retrieveCurrentUser() {
-		try {
-			byte[] payload = createTokenPayload();
-			Message response = sendRequest("user.get", payload);
-			JsonNode responseNode = parseResponse(response);
-			validateResponse(responseNode);
-			return responseNode;
-		} catch (SuspendedUserException e) {
-			throw e;
-		} catch (Exception e) {
-			throw new RuntimeException("Failed to retrieve current user", e);
-		}
-	}
+    public int sendUserCreate(JsonNode userPayload) throws ExistingInstanceException, Exception {
+        try {
+            byte[] payloadBytes = objectMapper.writeValueAsBytes(userPayload);
+            Message reply = natsUtils.getConnection()
+                    .request("user.create", payloadBytes, Duration.ofSeconds(5));
 
-	public void sendDeleteUserEvent(Integer userId) {
-		sendUserEvent("user.delete." + userId, userId);
-	}
+            JsonNode response = objectMapper.readTree(reply.getData());
+            int status = response.has("status") ? response.get("status").asInt() : 500;
 
-	public void sendSuspendUserEvent(Integer userId) {
-		sendUserEvent("user.suspend." + userId, userId);
-	}
+            if (status == 200 && response.has("id")) {
+                return response.get("id").asInt();
+            } else if (status == 409) {
+                throw new ExistingInstanceException(new Error("Email already exists."));
+            } else {
+                String msg = response.has("message") ? response.get("message").asText() : "Unknown error.";
+                throw new Exception("User creation failed: " + msg);
+            }
+        } catch (ExistingInstanceException e) {
+            throw e;
+        } catch (Exception ex) {
+            throw new Exception("NATS user.create failed: " + ex.getMessage(), ex);
+        }
+    }
 
-	public void sendReactivateUserEvent(Integer userId) {
-		sendUserEvent("user.reactivate." + userId, userId);
-	}
+    public void sendDeleteUserEvent(int userId, String jwtToken) {
+        sendUserEvent("user.delete." + userId, userId, jwtToken);
+    }
 
-	public void sendDeleteCartEvent(Integer cartId) {
-		sendEvent("cart.delete." + cartId);
-	}
+    public void sendSuspendUserEvent(int userId, String jwtToken) {
+        sendUserEvent("user.suspend." + userId, userId, jwtToken);
+    }
 
-	public void sendDeleteOrdersByCartId(Integer cartId) {
-		try {
-			Headers headers = createAuthHeaders();
-			String subject = "order.deleteAllByCartId." + cartId;
+    public void sendReactivateUserEvent(int userId, String jwtToken) {
+        sendUserEvent("user.reactivate." + userId, userId, jwtToken);
+    }
 
-			CompletableFuture<Message> response = natsUtils.getConnection().request(subject, headers, new byte[0]);
-			Message msg = response.get(REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+    public JsonNode retrieveCurrentUser(String jwtToken) throws Exception {
+        try {
+            ObjectNode payload = objectMapper.createObjectNode();
+            payload.put("token", jwtToken);
+            byte[] payloadBytes = objectMapper.writeValueAsBytes(payload);
 
-			JsonNode responseNode = objectMapper.readTree(msg.getData());
+            Message reply = natsUtils.getConnection()
+                    .request("user.get", payloadBytes, Duration.ofSeconds(2));
 
-			if (responseNode.has("error")) {
-				throw new RuntimeException("Failed to delete orders: " + responseNode.get("error").asText());
-			}
-		} catch (Exception e) {
-			throw new RuntimeException("NATS request failed for order deletion: " + e.getMessage(), e);
-		}
-	}
+            if (reply == null || reply.getData() == null) {
+                throw new RuntimeException("No reply received from user.get");
+            }
 
-	private byte[] createTokenPayload() throws Exception {
-		ObjectNode request = objectMapper.createObjectNode();
-		request.put("token", getCurrentToken());
-		return objectMapper.writeValueAsBytes(request);
-	}
+            JsonNode response = objectMapper.readTree(reply.getData());
+            int status = response.has("status") ? response.get("status").asInt() : 200;
 
-	private Message sendRequest(String subject, byte[] payload) throws Exception {
-		CompletableFuture<Message> response = natsUtils.getConnection().request(subject, payload);
-		return response.get(REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-	}
+            if (status >= 400) {
+                String msg = response.has("message") ? response.get("message").asText() : "Unknown error.";
+                throw new RuntimeException("Failed to fetch current user: " + msg);
+            }
 
-	private JsonNode parseResponse(Message msg) throws Exception {
-		return objectMapper.readTree(msg.getData());
-	}
+            return response;
+        } catch (Exception e) {
+            throw new RuntimeException("Error retrieving current user: " + e.getMessage(), e);
+        }
+    }
 
-	private void validateResponse(JsonNode response) {
-		if (response.has("status")) {
-			int status = response.get("status").asInt();
-			if (status == 451) {
-				String message = response.path("message").asText("Account suspended");
-				throw new SuspendedUserException(new Error(message));
-			}
-		}
-	}
+    public void sendDeleteAllOrders(int cartId, String jwtToken) throws Exception {
+        try {
+            ObjectNode payload = objectMapper.createObjectNode();
+            payload.put("Authorization", jwtToken);
+            byte[] payloadBytes = objectMapper.writeValueAsBytes(payload);
 
-	private String getCurrentToken() {
-		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-		if (authentication == null || !authentication.isAuthenticated()) {
-			throw new RuntimeException("User is not authenticated");
-		}
-		return authentication.getCredentials().toString();
-	}
+            Message reply = natsUtils.getConnection()
+                    .request("order.deleteAll." + cartId, payloadBytes, Duration.ofSeconds(2));
 
-	private void sendUserEvent(String subject, Integer userId) {
-		try {
-			byte[] payload = createUserEventPayload(userId);
-			Headers headers = createResponseHeaders();
-			natsUtils.getConnection().publish(subject, headers, payload);
-		} catch (Exception e) {
-			throw new RuntimeException("Error sending user event: " + subject, e);
-		}
-	}
+            if (reply == null || reply.getData() == null) {
+                throw new RuntimeException("No reply received from order.deleteAll");
+            }
 
-	private byte[] createUserEventPayload(Integer userId) throws Exception {
-		ObjectNode request = objectMapper.createObjectNode();
-		request.put("userId", userId);
-		return objectMapper.writeValueAsBytes(request);
-	}
+            JsonNode response = objectMapper.readTree(reply.getData());
+            int status = response.has("status") ? response.get("status").asInt() : 500;
 
-	private Headers createResponseHeaders() {
-		Headers headers = new Headers();
-		headers.add("Nats-Reply-To", USER_RESPONSE_QUEUE);
-		return headers;
-	}
+            if (status != 200) {
+                String msg = response.has("message") ? response.get("message").asText() : "Unknown error.";
+                throw new RuntimeException("Order deletion failed: " + msg);
+            }
+        } catch (Exception ex) {
+            throw new RuntimeException("NATS order.deleteAll failed: " + ex.getMessage(), ex);
+        }
+    }
 
-	private void sendEvent(String subject) {
-		natsUtils.getConnection().publish(subject, createAuthHeaders(), new byte[0]);
-	}
+    private void sendUserEvent(String subject, int userId, String jwtToken) {
+        try {
+            byte[] payload = createUserEventPayload(userId);
+            Headers headers = createAuthorizationHeaders(jwtToken);
+            natsUtils.getConnection().publish(subject, headers, payload);
+        } catch (Exception e) {
+            throw new RuntimeException("Error sending user event: " + subject, e);
+        }
+    }
 
-	private Headers createAuthHeaders() {
-		Headers headers = new Headers();
-		headers.add("Authorization", "Bearer " + getCurrentToken());
-		return headers;
-	}
+    public void sendCartDelete(int cartId, String jwtToken) throws Exception {
+        try {
+            ObjectNode payload = objectMapper.createObjectNode();
+            payload.put("Authorization", jwtToken);
+            byte[] payloadBytes = objectMapper.writeValueAsBytes(payload);
+
+            Message reply = natsUtils.getConnection()
+                    .request("cart.delete." + cartId, payloadBytes, Duration.ofSeconds(2));
+
+            if (reply == null || reply.getData() == null) {
+                throw new RuntimeException("No reply received from cart.delete");
+            }
+
+            JsonNode response = objectMapper.readTree(reply.getData());
+            int status = response.has("status") ? response.get("status").asInt() : 500;
+
+            if (status != 200) {
+                String msg = response.has("message") ? response.get("message").asText() : "Unknown error.";
+                throw new RuntimeException("Cart deletion failed: " + msg);
+            }
+        } catch (Exception ex) {
+            throw new RuntimeException("NATS cart.delete failed: " + ex.getMessage(), ex);
+        }
+    }
+
+    private byte[] createUserEventPayload(int userId) {
+        try {
+            ObjectNode nodeRequest = objectMapper.createObjectNode();
+            nodeRequest.put("userId", userId);
+            return objectMapper.writeValueAsBytes(nodeRequest);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to create user event payload", e);
+        }
+    }
+
+    private Headers createAuthorizationHeaders(String jwtToken) {
+        Headers headers = new Headers();
+        headers.add("Nats-Reply-To", USER_RESPONSE_QUEUE);
+        headers.add("Authorization", "Bearer " + jwtToken);
+        return headers;
+    }
+
+    public int sendCartCreate() throws Exception {
+        try {
+            ObjectNode emptyPayload = objectMapper.createObjectNode();
+            byte[] payloadBytes = objectMapper.writeValueAsBytes(emptyPayload);
+
+            Message reply = natsUtils.getConnection()
+                    .request("cart.create", payloadBytes, Duration.ofSeconds(2));
+
+            if (reply == null || reply.getData() == null) {
+                throw new RuntimeException("No reply received from cart.create");
+            }
+
+            JsonNode response = objectMapper.readTree(reply.getData());
+            int status = response.has("status") ? response.get("status").asInt() : 500;
+
+            if (status == 200 && response.has("id")) {
+                return response.get("id").asInt();
+            } else {
+                String msg = response.has("message") ? response.get("message").asText() : "Unknown error.";
+                throw new Exception("Cart creation failed: " + msg);
+            }
+        } catch (Exception ex) {
+            throw new Exception("NATS cart.create failed: " + ex.getMessage(), ex);
+        }
+    }
 }
