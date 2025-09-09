@@ -37,8 +37,8 @@ public class SecurityConfiguration {
                 ).cors(cors -> cors.configurationSource(corsHandler))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(jwtAuthenticationEntryPoint))
-                .authorizeHttpRequests(authorize -> authorize.requestMatchers("/api/auth/login", "api/auth/register","/api/health").anonymous()
-                        .requestMatchers("/api/auth/public-key").permitAll()
+                .authorizeHttpRequests(authorize -> authorize.requestMatchers("/api/auth/login", "api/auth/register").anonymous()
+                        .requestMatchers("/api/auth/public-key","/api/health","/prometheus").permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class).build();
     }

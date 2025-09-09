@@ -2,6 +2,7 @@ package com.radovan.play.repositories.impl;
 
 import com.radovan.play.entity.OrderAddressEntity;
 import com.radovan.play.repositories.OrderAddressRepository;
+import com.radovan.play.services.PrometheusService;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import jakarta.persistence.criteria.CriteriaBuilder;
@@ -19,14 +20,17 @@ import java.util.function.Function;
 public class OrderAddressRepositoryImpl implements OrderAddressRepository {
 
     private SessionFactory sessionFactory;
+    private PrometheusService prometheusService;
 
     @Inject
-    private void initialize(SessionFactory sessionFactory) {
+    private void initialize(SessionFactory sessionFactory, PrometheusService prometheusService) {
         this.sessionFactory = sessionFactory;
+        this.prometheusService = prometheusService;
     }
 
     // Generic method for handling transactions with SessionFactory
     private <T> T withSession(Function<Session, T> function) {
+        prometheusService.updateDatabaseQueryCount();
         try (Session session = sessionFactory.openSession()) {
             Transaction tx = session.beginTransaction();
             try {

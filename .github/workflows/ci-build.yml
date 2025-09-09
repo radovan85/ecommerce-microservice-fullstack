@@ -2,9 +2,9 @@ name: CI Build and Push Images
 
 on:
   push:
-    branches: [ "dev3" ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ "dev3" ]
+    branches: [ "main" ]
 
 jobs:
   build-and-push:
@@ -67,20 +67,20 @@ jobs:
       - name: Build and Push Docker Images
         run: |
           IMAGE_PREFIX=ghcr.io/${{ github.repository_owner }}
-          docker build -t $IMAGE_PREFIX/eureka-server:dev3 ./backend/eureka-server-app
-          docker build -t $IMAGE_PREFIX/api-gateway:dev3 ./backend/api-gateway
-          docker build -t $IMAGE_PREFIX/auth-service:dev3 ./backend/auth-service
-          docker build -t $IMAGE_PREFIX/customer-service:dev3 ./backend/customer-service
-          docker build -t $IMAGE_PREFIX/cart-service:dev3 ./backend/cart-service
-          docker build -t $IMAGE_PREFIX/product-service:dev3 ./backend/product-service
-          docker build -t $IMAGE_PREFIX/order-service:dev3 ./backend/order-service
-          docker build -t $IMAGE_PREFIX/angular-ecommerce:dev3 ./angular-frontend
+          docker build -t $IMAGE_PREFIX/ecommerce/eureka-server:dev3 ./backend/eureka-server-app
+          docker build -t $IMAGE_PREFIX/ecommerce/api-gateway:dev3 ./backend/api-gateway
+          docker build -t $IMAGE_PREFIX/ecommerce/auth-service:dev3 ./backend/auth-service
+          docker build -t $IMAGE_PREFIX/ecommerce/customer-service:dev3 ./backend/customer-service
+          docker build -t $IMAGE_PREFIX/ecommerce/cart-service:dev3 ./backend/cart-service
+          docker build -t $IMAGE_PREFIX/ecommerce/product-service:dev3 ./backend/product-service
+          docker build -t $IMAGE_PREFIX/ecommerce/order-service:dev3 ./backend/order-service
+          docker build -t $IMAGE_PREFIX/ecommerce/angular-ecommerce:dev3 ./angular-frontend
 
-          docker push $IMAGE_PREFIX/eureka-server:dev3
-          docker push $IMAGE_PREFIX/api-gateway:dev3
-          docker push $IMAGE_PREFIX/auth-service:dev3
-          docker push $IMAGE_PREFIX/customer-service:dev3
-          docker push $IMAGE_PREFIX/cart-service:dev3
-          docker push $IMAGE_PREFIX/product-service:dev3
-          docker push $IMAGE_PREFIX/order-service:dev3
-          docker push $IMAGE_PREFIX/angular-ecommerce:dev3
+          docker push $IMAGE_PREFIX/ecommerce/eureka-server:main
+          docker push $IMAGE_PREFIX/ecommerce/api-gateway:main
+          docker push $IMAGE_PREFIX/ecommerce/auth-service:main
+          docker push $IMAGE_PREFIX/ecommerce/customer-service:main
+          docker push $IMAGE_PREFIX/ecommerce/cart-service:main
+          docker push $IMAGE_PREFIX/ecommerce/product-service:main
+          docker push $IMAGE_PREFIX/ecommerce/order-service:main
+          docker push $IMAGE_PREFIX/ecommerce/angular-ecommerce:main

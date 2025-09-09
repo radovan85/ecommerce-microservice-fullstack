@@ -6,7 +6,6 @@ import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.radovan.spring.broker.CartNatsSender;
@@ -39,14 +38,13 @@ public class CartItemServiceImpl implements CartItemService {
 	}
 
 	@Override
-	@Transactional
-	public CartItemDto addCartItem(Integer productId) {
+	public CartItemDto addCartItem(Integer productId,String jwtToken) {
 
 		// Dohvatanje korisničkih podataka
-		JsonNode customerData = cartNatsSender.retrieveCurrentCustomer();
+		JsonNode customerData = cartNatsSender.retrieveCurrentCustomer(jwtToken);
 
 		// Dohvatanje podataka o proizvodu
-		JsonNode productData = cartNatsSender.retrieveProductFromBroker(productId);
+		JsonNode productData = cartNatsSender.retrieveProductFromBroker(productId,jwtToken);
 
 		// Validacija ID-a korpe
 		Integer cartId = customerData.get("cartId").asInt();
@@ -102,9 +100,8 @@ public class CartItemServiceImpl implements CartItemService {
 	}
 
 	@Override
-	@Transactional
-	public void removeCartItem(Integer itemId) {
-		JsonNode customerData = cartNatsSender.retrieveCurrentCustomer();
+	public void removeCartItem(Integer itemId,String jwtToken) {
+		JsonNode customerData = cartNatsSender.retrieveCurrentCustomer(jwtToken);
 		Integer cartId = customerData.get("cartId").asInt();
 		CartItemDto cartItem = getItemById(itemId);
 
@@ -117,36 +114,30 @@ public class CartItemServiceImpl implements CartItemService {
 	}
 
 	@Override
-	@Transactional
 	public void removeAllByCartId(Integer cartId) {
 		itemRepository.deleteAllByCartId(cartId);
 		cartService.refreshCartState(cartId);
 	}
 
 	@Override
-	@Transactional
 	public void removeAllByProductId(Integer productId) {
 		itemRepository.deleteAllByProductId(productId);
-		itemRepository.flush();
 		cartService.refreshAllCarts();
 	}
 
 	@Override
-	@Transactional(readOnly = true)
 	public List<CartItemDto> listAllByCartId(Integer cartId) {
 		return itemRepository.findAllByCartId(cartId).stream().map(tempConverter::cartItemEntityToDto)
 				.collect(Collectors.toList());
 	}
 
 	@Override
-	@Transactional(readOnly = true)
 	public List<CartItemDto> listAllByProductId(Integer productId) {
 		return itemRepository.findAllByProductId(productId).stream().map(tempConverter::cartItemEntityToDto)
 				.collect(Collectors.toList());
 	}
 
 	@Override
-	@Transactional(readOnly = true)
 	public CartItemDto getItemById(Integer itemId) {
 		CartItemEntity itemEntity = itemRepository.findById(itemId)
 				.orElseThrow(() -> new InstanceUndefinedException(new Error("Cart item has not been found!")));
@@ -154,9 +145,8 @@ public class CartItemServiceImpl implements CartItemService {
 	}
 
 	@Override
-	@Transactional
-	public void updateAllByProductId(Integer productId) {
-		JsonNode productData = cartNatsSender.retrieveProductFromBroker(productId);
+	public void updateAllByProductId(Integer productId,String jwtToken) {
+		JsonNode productData = cartNatsSender.retrieveProductFromBroker(productId,jwtToken);
 		JsonNode productDetails = productData.get("product");
 
 		float productPrice = productDetails.get("productPrice").floatValue();
@@ -170,7 +160,7 @@ public class CartItemServiceImpl implements CartItemService {
 			finalPrice = finalPrice * cartItem.getQuantity(); // ✅ Korekcija cene
 
 			cartItem.setPrice(finalPrice);
-			itemRepository.saveAndFlush(cartItem); // ✅ Ažuriranje u bazi
+			itemRepository.save(cartItem); // ✅ Ažuriranje u bazi
 		});
 
 		cartService.refreshAllCarts();

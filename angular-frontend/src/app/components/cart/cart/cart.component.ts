@@ -12,43 +12,56 @@ import { ProductService } from '../../../services/product.service';
   standalone: true,
   imports: [CommonModule],
   templateUrl: './cart.component.html',
-  styleUrl: './cart.component.css',
+  styleUrl: './cart.component.css'
 })
 export class CartComponent implements OnInit {
+
   private allItems: CartItem[] = [];
   private allProducts: Product[] = [];
   private productService = inject(ProductService);
   private cartService = inject(CartService);
-  private cart: Cart = new Cart();
+  private cart: Cart = new Cart;
   private orderService = inject(OrderService);
 
   ngOnInit(): void {
-    Promise.all([this.listMyItems(), this.listAllProducts(), this.getMyCart()])
-    .catch((error: any) => {
-      console.log(`Error loading functions ${error}`);
-    });
+    Promise.all([
+      this.listMyItems(),
+      this.listAllProducts(),
+      this.getMyCart()
+    ])
+
+      .catch((error: any) => {
+        console.log(`Error loading functions ${error}`);
+      })
+
   }
+
 
   getAllItems(): CartItem[] {
     return this.allItems;
   }
 
-  listMyItems(): Promise<any> {
-    return this.cartService.collectMyItems().then((response) => {
-      this.allItems = response.data;
-    });
+  getMyCart(): Promise<any> {
+    return new Promise(() => {
+      this.cartService.getMyCart()
+        .then((response) => {
+          this.cart = response.data;
+        })
+    })
   }
 
   listAllProducts(): Promise<any> {
-    return this.productService.collectAllProducts().then((response) => {
-      this.allProducts = response.data;
-    });
+    return new Promise(() => {
+      this.productService.collectAllProducts()
+        .then((response) => {
+          this.allProducts = response.data;
+        })
+    })
   }
 
+
   getProductName(productId: any): string {
-    var tempProduct = this.allProducts.find(
-      (prod) => prod.productId === productId
-    );
+    var tempProduct = this.allProducts.find(prod => prod.productId === productId);
     if (tempProduct) {
       return `${tempProduct.productName}`;
     } else {
@@ -56,10 +69,16 @@ export class CartComponent implements OnInit {
     }
   }
 
-  getMyCart(): Promise<any> {
-    return this.cartService.getMyCart().then((response) => {
-      this.cart = response.data;
-    });
+
+  listMyItems(): Promise<any> {
+    return new Promise(() => {
+      this.cartService.collectMyItems()
+        .then((response) => {
+          setTimeout(() => {
+            this.allItems = response.data;
+          })
+        })
+    })
   }
 
   getCart(): Cart {
@@ -68,27 +87,28 @@ export class CartComponent implements OnInit {
 
   clearCart() {
     if (confirm(`Are you sure you want to clear your cart?`)) {
-      this.cartService.clearCart().then(() => {
-        this.listMyItems();
-        this.getMyCart();
-        this.cartService.redirectCart();
-      });
+      this.cartService.clearCart()
+        .then(() => {
+          this.listMyItems();
+          this.getMyCart();
+          this.cartService.redirectCart();
+        })
     }
   }
 
   removeItem(itemId: any) {
     if (confirm(`Remove this item?`)) {
-      this.cartService.deleteItem(itemId).then(() => {
-        this.listMyItems();
-        this.getMyCart();
-        this.cartService.redirectCart();
-      });
+      this.cartService.deleteItem(itemId)
+        .then(() => {
+          this.listMyItems();
+          this.getMyCart();
+          this.cartService.redirectCart();
+        })
     }
   }
 
   redirectCheckout() {
-    this.cartService
-      .validateCart()
+    this.cartService.validateCart()
       .then(() => {
         this.orderService.redirectAddressConfirm();
       })
@@ -100,6 +120,7 @@ export class CartComponent implements OnInit {
           console.log(error);
           alert(`Failed!`);
         }
-      });
+
+      })
   }
 }

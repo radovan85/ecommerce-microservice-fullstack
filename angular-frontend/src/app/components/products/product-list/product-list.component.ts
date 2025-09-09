@@ -9,11 +9,12 @@ import { RouterLink } from '@angular/router';
 @Component({
   selector: 'app-product-list',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule,RouterLink],
   templateUrl: './product-list.component.html',
-  styleUrl: './product-list.component.css',
+  styleUrl: './product-list.component.css'
 })
 export class ProductListComponent implements OnInit {
+
   private hasAuthorityAdmin = false;
   private hasAuthorityUser = false;
   private paginatedProducts: Product[] = [];
@@ -28,13 +29,16 @@ export class ProductListComponent implements OnInit {
   ngOnInit(): void {
     Promise.all([
       this.listAllProducts(),
-      (this.hasAuthorityAdmin = this.authService.isAdmin()),
-      this.listAllImages(),
+      this.hasAuthorityAdmin = this.authService.isAdmin(),
+      this.listAllImages()
     ])
-    .catch((error) => {
-      console.log(`Error loading the functions ${error}`);
-    });
+
+      .catch((error) => {
+        console.log(`Error loading the functions ${error}`);
+      })
+
   }
+
 
   getHasAuthorityAdmin(): boolean {
     return this.hasAuthorityAdmin;
@@ -69,10 +73,7 @@ export class ProductListComponent implements OnInit {
       return;
     }
     this.currentPage = page;
-    this.paginatedProducts = this.allProducts.slice(
-      (page - 1) * this.pageSize,
-      page * this.pageSize
-    );
+    this.paginatedProducts = this.allProducts.slice((page - 1) * this.pageSize, page * this.pageSize);
   }
 
   nextPage() {
@@ -84,27 +85,33 @@ export class ProductListComponent implements OnInit {
   }
 
   listAllProducts(): Promise<any> {
-    return this.productService.collectAllProducts().then((response) => {
-      this.allProducts = response.data;
-      this.totalPages = Math.ceil(this.allProducts.length / this.pageSize);
-      this.setPage(1);
-    });
+    return new Promise(() => {
+      this.productService.collectAllProducts()
+        .then((response) => {
+          this.allProducts = response.data;
+          this.totalPages = Math.ceil(this.allProducts.length / this.pageSize);
+          this.setPage(1);
+        })
+    })
   }
 
   listAllImages(): Promise<any> {
-    return this.productService.collectAllImages().then((response) => {
-      this.allImages = response.data;
-    });
+    return new Promise(() => {
+      this.productService.collectAllImages()
+        .then((response) => {
+          this.allImages = response.data;
+        })
+    })
   }
+
+
 
   getAllImages(): ProductImage[] {
     return this.allImages;
   }
 
   getProductImage(product: Product): string {
-    var image = this.allImages.find(
-      (img) => img.productId === product.productId
-    );
+    var image = this.allImages.find(img => img.productId === product.productId);
     if (image) {
       return `data:image/jpg;base64,${image.data}`;
     } else {
@@ -112,4 +119,7 @@ export class ProductListComponent implements OnInit {
       return `https://t4.ftcdn.net/jpg/04/99/93/31/360_F_499933117_ZAUBfv3P1HEOsZDrnkbNCt4jc3AodArl.jpg`;
     }
   }
+
+
+
 }

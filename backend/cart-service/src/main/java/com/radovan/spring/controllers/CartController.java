@@ -2,6 +2,7 @@ package com.radovan.spring.controllers;
 
 import java.util.List;
 
+import com.radovan.spring.utils.TokenUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -31,7 +32,7 @@ public class CartController {
 
 	@GetMapping(value = "/getMyItems")
 	public ResponseEntity<List<CartItemDto>> listMyItems() {
-		JsonNode customerData = cartNatsSender.retrieveCurrentCustomer();
+		JsonNode customerData = cartNatsSender.retrieveCurrentCustomer(TokenUtils.provideToken());
 		Integer cartId = customerData.get("cartId").asInt();
 
 		List<CartItemDto> allItems = cartItemService.listAllByCartId(cartId);
@@ -40,13 +41,13 @@ public class CartController {
 
 	@PostMapping(value = "/addCartItem/{productId}")
 	public ResponseEntity<String> addItem(@PathVariable("productId") Integer productId) {
-		cartItemService.addCartItem(productId);
+		cartItemService.addCartItem(productId,TokenUtils.provideToken());
 		return new ResponseEntity<>("The item has been added to the cart!", HttpStatus.OK);
 	}
 
 	@DeleteMapping(value = "/deleteItem/{itemId}")
 	public ResponseEntity<String> deleteItem(@PathVariable("itemId") Integer itemId) {
-		cartItemService.removeCartItem(itemId);
+		cartItemService.removeCartItem(itemId, TokenUtils.provideToken());
 		return new ResponseEntity<>("The item has been removed from the cart!", HttpStatus.OK);
 	}
 
@@ -58,7 +59,7 @@ public class CartController {
 
 	@GetMapping(value = "/getMyCart")
 	public ResponseEntity<CartDto> getMyCart() {
-		JsonNode customerData = cartNatsSender.retrieveCurrentCustomer();
+		JsonNode customerData = cartNatsSender.retrieveCurrentCustomer(TokenUtils.provideToken());
 		Integer cartId = customerData.get("cartId").asInt();
 
 		CartDto cart = cartService.getCartById(cartId);
@@ -67,7 +68,7 @@ public class CartController {
 
 	@GetMapping(value = "/validateCart")
 	public ResponseEntity<CartDto> validateCart() {
-		JsonNode customerData = cartNatsSender.retrieveCurrentCustomer();
+		JsonNode customerData = cartNatsSender.retrieveCurrentCustomer(TokenUtils.provideToken());
 		Integer cartId = customerData.get("cartId").asInt();
 		return new ResponseEntity<>(cartService.validateCart(cartId), HttpStatus.OK);
 	}

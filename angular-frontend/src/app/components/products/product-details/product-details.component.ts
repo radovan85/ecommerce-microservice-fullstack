@@ -15,10 +15,12 @@ import { Location } from '@angular/common';
   standalone: true,
   imports: [CommonModule, RouterLink],
   templateUrl: './product-details.component.html',
-  styleUrl: './product-details.component.css',
+  styleUrl: './product-details.component.css'
 })
 export class ProductDetailsComponent implements OnInit {
-  private product: Product = new Product();
+
+
+  private product: Product = new Product;
   private hasAuthorityUser = false;
   private hasAuthorityAdmin = false;
   private allCategories: ProductCategory[] = [];
@@ -30,35 +32,47 @@ export class ProductDetailsComponent implements OnInit {
   private cartService = inject(CartService);
   private location = inject(Location);
 
+
+
   ngOnInit(): void {
     Promise.all([
       this.listAllCategories(),
       this.getProductDetails(this.route.snapshot.params[`productId`]),
-      (this.hasAuthorityAdmin = this.authService.isAdmin()),
-      (this.hasAuthorityUser = this.authService.isUser()),
-      this.listAllImages(),
+      this.hasAuthorityAdmin = this.authService.isAdmin(),
+      this.hasAuthorityUser = this.authService.isUser(),
+      this.listAllImages()
     ])
-    .then((error) => {
-      console.log(`Error loading functions ${error}`);
-    });
+
+      .then((error) => {
+        console.log(`Error loading functions ${error}`);
+      })
   }
 
   listAllCategories(): Promise<any> {
-    return this.categoryService.collectAllCategories().then((response) => {
-      this.allCategories = response.data;
-    });
+    return new Promise(() => {
+      this.categoryService.collectAllCategories()
+        .then((response) => {
+          this.allCategories = response.data;
+        })
+    })
   }
 
   listAllImages(): Promise<any> {
-    return this.productService.collectAllImages().then((response) => {
-      this.allImages = response.data;
-    });
+    return new Promise(() => {
+      this.productService.collectAllImages()
+        .then((response) => {
+          this.allImages = response.data;
+        })
+    })
   }
 
   getProductDetails(productId: any): Promise<any> {
-    return this.productService.getProductDetails(productId).then((response) => {
-      this.product = response.data;
-    });
+    return new Promise(() => {
+      this.productService.getProductDetails(productId)
+        .then((response) => {
+          this.product = response.data;
+        })
+    })
   }
 
   public getAllCategories(): ProductCategory[] {
@@ -77,42 +91,38 @@ export class ProductDetailsComponent implements OnInit {
     return this.hasAuthorityAdmin;
   }
 
+
+
   deleteProduct(productId: any) {
     if (confirm(`Remove this product?It will affect all related data!`)) {
-      this.productService
-        .deleteProduct(productId)
+      this.productService.deleteProduct(productId)
         .then(() => {
           this.productService.redirectAllProducts();
         })
 
         .catch(() => {
           alert(`Failed!`);
-        });
+        })
     }
   }
 
   getProductImage(product: Product): string {
-    var image = this.allImages.find(
-      (img) => img.productId === product.productId
-    );
+    var image = this.allImages.find(img => img.productId === product.productId);
     if (image) {
       return `data:image/jpg;base64,${image.data}`;
     } else {
+      // Return URL for default image
       return `https://t4.ftcdn.net/jpg/04/99/93/31/360_F_499933117_ZAUBfv3P1HEOsZDrnkbNCt4jc3AodArl.jpg`;
     }
   }
 
   getProductCategory(product: Product): ProductCategory {
-    var category = this.allCategories.find(
-      (tempCategory) =>
-        tempCategory.productCategoryId === product.productCategoryId
-    );
-    return category || new ProductCategory();
+    var category = this.allCategories.find(tempCategory => tempCategory.productCategoryId === product.productCategoryId);
+    return category || new ProductCategory;
   }
 
   addToCart(productId: any) {
-    this.cartService
-      .addToCart(productId)
+    this.cartService.addToCart(productId)
       .then(() => {
         alert(`The item has been added to your cart!`);
       })
@@ -124,10 +134,11 @@ export class ProductDetailsComponent implements OnInit {
           console.log(error);
           alert(`Error!`);
         }
-      });
+      })
   }
 
   goBack() {
     this.location.back();
   }
+
 }

@@ -1,26 +1,23 @@
 package com.radovan.spring.repositories;
 
-import java.util.List;
-
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
-import org.springframework.stereotype.Repository;
-
 import com.radovan.spring.entity.CartItemEntity;
 
-@Repository
-public interface CartItemRepository extends JpaRepository<CartItemEntity, Integer> {
+import java.util.List;
+import java.util.Optional;
 
-	@Modifying
-	@Query(value = "delete from cart_items where cart_id = :cartId", nativeQuery = true)
-	void deleteAllByCartId(@Param("cartId") Integer cartId);
+public interface CartItemRepository {
 
-	@Query(value = "select * from cart_items where cart_id = :cartId", nativeQuery = true)
-	List<CartItemEntity> findAllByCartId(@Param("cartId") Integer cartId);
+	void deleteAllByCartId(Integer cartId);
+
+	void deleteAllByProductId(Integer productId);
+
+	List<CartItemEntity> findAllByCartId(Integer cartId);
 
 	List<CartItemEntity> findAllByProductId(Integer productId);
 
-	void deleteAllByProductId(Integer productId);
+	Optional<CartItemEntity> findById(Integer itemId);
+
+	void deleteById(Integer itemId);
+
+	CartItemEntity save(CartItemEntity itemEntity);
 }

@@ -2,6 +2,7 @@ package com.radovan.play.repositories.impl;
 
 import com.radovan.play.entity.OrderItemEntity;
 import com.radovan.play.repositories.OrderItemRepository;
+import com.radovan.play.services.PrometheusService;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import jakarta.persistence.criteria.CriteriaBuilder;
@@ -19,14 +20,17 @@ import java.util.function.Function;
 public class OrderItemRepositoryImpl implements OrderItemRepository {
 
     private SessionFactory sessionFactory;
+    private PrometheusService prometheusService;
 
     @Inject
-    private void initialize(SessionFactory sessionFactory) {
+    private void initialize(SessionFactory sessionFactory, PrometheusService prometheusService) {
         this.sessionFactory = sessionFactory;
+        this.prometheusService = prometheusService;
     }
 
     // Generic method for handling transactions with SessionFactory
     private <T> T withSession(Function<Session, T> function) {
+        prometheusService.updateDatabaseQueryCount();
         try (Session session = sessionFactory.openSession()) {
             Transaction tx = session.beginTransaction();
             try {
@@ -56,9 +60,9 @@ public class OrderItemRepositoryImpl implements OrderItemRepository {
     @Override
     public OrderItemEntity save(OrderItemEntity orderItemEntity) {
         return withSession(session -> {
-            if(orderItemEntity.getOrderItemId() == null){
+            if (orderItemEntity.getOrderItemId() == null) {
                 session.persist(orderItemEntity);
-            }else{
+            } else {
                 session.merge(orderItemEntity);
             }
             session.flush();
@@ -78,7 +82,7 @@ public class OrderItemRepositoryImpl implements OrderItemRepository {
     }
 
     @Override
-    public List<OrderItemEntity> findAllByOrderId(Integer orderId){
+    public List<OrderItemEntity> findAllByOrderId(Integer orderId) {
         return withSession(session -> {
             CriteriaBuilder cb = session.getCriteriaBuilder();
             CriteriaQuery<OrderItemEntity> cq = cb.createQuery(OrderItemEntity.class);

@@ -6,19 +6,18 @@ import com.radovan.play.utils.NatsUtils;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
-
 @Singleton
 public class ProductNatsSender {
 
-    private static final String CONTENT_TYPE = "application/json";
-    private static final String CART_ITEMS_REFRESH_PREFIX = "cart.updateAllByProductId.";
-    private static final String CART_ITEMS_delete_PREFIX = "cart.removeAllByProductId.";
+    private static final String ContentType = "application/json";
+    private static final String CartItemsRefreshPrefix = "cart.updateAllByProductId.";
+    private static final String CartItemsDeletePrefix = "cart.removeAllByProductId.";
 
-    private final NatsUtils natsUtils;
-    private final ObjectMapper objectMapper;
+    private  NatsUtils natsUtils;
+    private  ObjectMapper objectMapper;
 
     @Inject
-    public ProductNatsSender(NatsUtils natsUtils, ObjectMapper objectMapper) {
+    private void initialize(NatsUtils natsUtils, ObjectMapper objectMapper) {
         this.natsUtils = natsUtils;
         this.objectMapper = objectMapper;
     }
@@ -29,20 +28,27 @@ public class ProductNatsSender {
             messagePayload.put("Product-ID", productId);
             messagePayload.put("Authorization", jwtToken);
 
-            natsUtils.getConnection().publish(CART_ITEMS_REFRESH_PREFIX + productId, objectMapper.writeValueAsBytes(messagePayload));
+            String subject = CartItemsRefreshPrefix + productId;
+            byte[] payload = objectMapper.writeValueAsBytes(messagePayload);
+
+            natsUtils.getConnection().publish(subject, payload);
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    public void sendCartDeleteRequest(Integer productId) {
+    public void sendCartDeleteRequest(Integer productId, String jwtToken) {
         try {
-            natsUtils.getConnection().publish(CART_ITEMS_delete_PREFIX + productId, new byte[0]);
+            ObjectNode messagePayload = objectMapper.createObjectNode();
+            messagePayload.put("Product-ID", productId);
+            messagePayload.put("Authorization", jwtToken);
+
+            String subject = CartItemsDeletePrefix + productId;
+            byte[] payload = objectMapper.writeValueAsBytes(messagePayload);
+
+            natsUtils.getConnection().publish(subject, payload);
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
-
-
-
 }

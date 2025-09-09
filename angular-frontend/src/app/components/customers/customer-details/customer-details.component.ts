@@ -15,10 +15,11 @@ import { Location } from '@angular/common';
   standalone: true,
   imports: [NavbarComponent, CommonModule],
   templateUrl: './customer-details.component.html',
-  styleUrl: './customer-details.component.css',
+  styleUrl: './customer-details.component.css'
 })
 export class CustomerDetailsComponent implements OnInit {
-  private customer: Customer = new Customer();
+
+  private customer: Customer = new Customer;
   private route = inject(ActivatedRoute);
   private customerService = inject(CustomerService);
   private userService = inject(UserService);
@@ -31,21 +32,17 @@ export class CustomerDetailsComponent implements OnInit {
     Promise.all([
       this.getCustomerDetails(this.route.snapshot.params[`customerId`]),
       this.listAllUsers(),
-      this.listAllAddresses(),
+      this.listAllAddresses()
     ])
-    .catch((error) => {
-      console.log(`Error loading the functions ${error}`);
-    });
+
+      .catch((error) => {
+        console.log(`Error loading the functions ${error}`);
+      })
   }
 
   deleteCustomer(customerId: any) {
-    if (
-      confirm(
-        `Are you sure you want to remove this customer?\nIt will affect all related data!`
-      )
-    ) {
-      this.customerService
-        .deleteCustomer(customerId)
+    if (confirm(`Are you sure you want to remove this customer?\nIt will affect all related data!`)) {
+      this.customerService.deleteCustomer(customerId)
 
         .then(() => {
           this.customerService.redirectAllCustomers();
@@ -54,16 +51,17 @@ export class CustomerDetailsComponent implements OnInit {
         .catch((error) => {
           console.log(error);
           alert(`Failed!`);
-        });
+        })
     }
   }
 
   getCustomerDetails(customerId: any): Promise<any> {
-    return this.customerService
-      .getCustomerDetails(customerId)
-      .then((response) => {
-        this.customer = response.data;
-      });
+    return new Promise(() => {
+      this.customerService.getCustomerDetails(customerId)
+        .then((response) => {
+          this.customer = response.data;
+        })
+    })
   }
 
   getCustomer(): Customer {
@@ -71,43 +69,48 @@ export class CustomerDetailsComponent implements OnInit {
   }
 
   listAllUsers(): Promise<any> {
-    return this.userService.collectAllUsers().then((response) => {
-      this.allUsers = response.data;
-    });
+    return new Promise(() => {
+      this.userService.collectAllUsers()
+        .then((response) => {
+          this.allUsers = response.data;
+        })
+    })
   }
 
   getUserById(userId: any): User {
-    var returnValue: User = new User();
+    var returnValue: User = new User;
     this.allUsers.forEach((user) => {
       if (user.id === userId) {
         returnValue = user;
       }
-    });
+    })
 
     return returnValue;
   }
 
   listAllAddresses(): Promise<any> {
-    return this.addressService.collectAllAddresses().then((response) => {
-      this.allAddresses = response.data;
-    });
+    return new Promise(() => {
+      this.addressService.collectAllAddresses()
+        .then((response) => {
+          this.allAddresses = response.data;
+        })
+    })
   }
 
   getAddress(addressId: any) {
-    var returnValue: ShippingAddress = new ShippingAddress();
+    var returnValue: ShippingAddress = new ShippingAddress;
     this.allAddresses.forEach((address) => {
       if (address.shippingAddressId === addressId) {
         returnValue = address;
       }
-    });
+    })
 
     return returnValue;
   }
 
   reactivateCustomer(customerId: any) {
     if (confirm(`Are you sure you want to reactivate this customer?`)) {
-      this.customerService
-        .reactivateCustomer(customerId)
+      this.customerService.reactivateCustomer(customerId)
 
         .then(() => {
           this.customerService.redirectAllCustomers();
@@ -116,14 +119,13 @@ export class CustomerDetailsComponent implements OnInit {
         .catch((error) => {
           console.log(error);
           alert(`Failed!`);
-        });
+        })
     }
   }
 
   suspendCustomer(customerId: any) {
     if (confirm(`Are you sure you want to suspend this customer?`)) {
-      this.customerService
-        .suspendCustomer(customerId)
+      this.customerService.suspendCustomer(customerId)
         .then(() => {
           this.customerService.redirectAllCustomers();
         })
@@ -131,11 +133,12 @@ export class CustomerDetailsComponent implements OnInit {
         .catch((error) => {
           console.log(error);
           alert(`Failed!`);
-        });
+        })
     }
   }
 
   goBack() {
     this.location.back();
   }
+
 }

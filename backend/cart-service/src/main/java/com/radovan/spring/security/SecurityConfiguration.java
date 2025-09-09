@@ -30,7 +30,7 @@ public class SecurityConfiguration {
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authorizeHttpRequests(
 						auth -> auth
-						.requestMatchers("/api/health").permitAll()
+						.requestMatchers("/api/health","/prometheus").permitAll()
 						.requestMatchers("/api/cart/**").hasAuthority("ROLE_USER")
 						.anyRequest().authenticated())
 				.addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class);

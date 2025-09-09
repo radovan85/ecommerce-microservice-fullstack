@@ -7,7 +7,6 @@ import java.util.List;
 
 public interface OrderService {
 
-    OrderDto addOrder(Http.Request request);
 
     OrderDto getOrderById(Integer orderId);
 
@@ -18,4 +17,6 @@ public interface OrderService {
     void deleteOrder(Integer orderId);
 
     void deleteAllByCartId(Integer cartId);
+
+    OrderDto addOrder(String jwtToken);
 }

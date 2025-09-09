@@ -11,6 +11,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.nio.file.Files;
@@ -81,7 +82,13 @@ public class EurekaServiceDiscoveryImpl implements EurekaServiceDiscovery {
 
 			throw new RuntimeException("Service not found: " + serviceName);
 
-		} catch (Exception e) {
+		} 
+		catch(HttpClientErrorException ex) {
+			System.err.println("System error: " + serviceName + " not found in Eureka");
+			throw ex;
+		}
+		
+		catch (Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException("Failed to fetch service URL from Eureka registry", e);
 		}

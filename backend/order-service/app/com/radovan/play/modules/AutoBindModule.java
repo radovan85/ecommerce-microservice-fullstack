@@ -18,6 +18,9 @@ import com.radovan.play.utils.NatsUtils;
 import com.radovan.play.utils.PublicKeyCache;
 import com.radovan.play.utils.ServiceUrlProvider;
 import com.typesafe.config.Config;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.prometheusmetrics.PrometheusConfig;
+import io.micrometer.prometheusmetrics.PrometheusMeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import play.Environment;
@@ -38,6 +41,7 @@ public class AutoBindModule extends AbstractModule {
         bind(OrderService.class).to(OrderServiceImpl.class).asEagerSingleton();
         bind(OrderRepository.class).to(OrderRepositoryImpl.class).asEagerSingleton();
         bind(OrderItemService.class).to(OrderItemServiceImpl.class).asEagerSingleton();
+        bind(PrometheusService.class).to(PrometheusServiceImpl.class).asEagerSingleton();
         bind(OrderItemRepository.class).to(OrderItemRepositoryImpl.class).asEagerSingleton();
         bind(OrderAddressService.class).to(OrderAddressServiceImpl.class).asEagerSingleton();
         bind(OrderAddressRepository.class).to(OrderAddressRepositoryImpl.class).asEagerSingleton();
@@ -52,5 +56,8 @@ public class AutoBindModule extends AbstractModule {
         bind(OrderNatsListener.class).asEagerSingleton();
         bind(NatsUtils.class).asEagerSingleton();
 
+        PrometheusMeterRegistry prometheusRegistry = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
+        bind(PrometheusMeterRegistry.class).toInstance(prometheusRegistry);
+        bind(MeterRegistry.class).toInstance(prometheusRegistry);
     }
 }

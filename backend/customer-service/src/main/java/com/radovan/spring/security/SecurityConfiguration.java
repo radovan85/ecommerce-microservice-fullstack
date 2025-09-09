@@ -29,7 +29,7 @@ public class SecurityConfiguration {
 		http.cors(cors -> cors.configurationSource(corsHandler)).csrf(csrf -> csrf.disable())
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authorizeHttpRequests(
-						auth -> auth.requestMatchers("/api/health").permitAll()
+						auth -> auth.requestMatchers("/api/health","/prometheus").permitAll()
 						.requestMatchers("/api/customers/register").anonymous()
 						.anyRequest().authenticated())
 				.addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class);

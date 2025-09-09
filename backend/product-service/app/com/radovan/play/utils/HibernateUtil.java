@@ -21,17 +21,14 @@ public class HibernateUtil {
         try {
             // 🔧 Hikari konfiguracija
             HikariConfig hikariConfig = new HikariConfig();
+            hikariConfig.setDriverClassName("org.postgresql.Driver");
             String dbUrl = System.getenv("DB_URL");
-            String dbUsername = System.getenv("DB_USERNAME");
             String dbPassword = System.getenv("DB_PASSWORD");
-
-            if (dbUrl == null || dbUsername == null || dbPassword == null) {
-                throw new IllegalStateException("Database environment variables are missing!");
-            }
+            String dbUsername = System.getenv("DB_USERNAME");
+            if (dbUrl == null || dbUsername == null || dbPassword == null) throw new IllegalStateException("Database environment variables are missing!");
             hikariConfig.setJdbcUrl(dbUrl);
             hikariConfig.setUsername(dbUsername);
             hikariConfig.setPassword(dbPassword);
-            hikariConfig.setDriverClassName("org.postgresql.Driver");
             hikariConfig.setMaximumPoolSize(10);
             hikariConfig.setMinimumIdle(2);
             hikariConfig.setIdleTimeout(600000);
@@ -50,12 +47,10 @@ public class HibernateUtil {
             configuration.setProperty("hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect");
 
 
-
             // ➕ Dodaj sve entity klase
-            configuration.addAnnotatedClass(com.radovan.play.entity.ProductEntity.class);
             configuration.addAnnotatedClass(com.radovan.play.entity.ProductCategoryEntity.class);
             configuration.addAnnotatedClass(com.radovan.play.entity.ProductImageEntity.class);
-
+            configuration.addAnnotatedClass(com.radovan.play.entity.ProductEntity.class);
             // Dodaj još po potrebi...
 
             // 🧱 SessionFactory setup

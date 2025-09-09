@@ -13,9 +13,7 @@ public interface OrderRepository {
 
     List<OrderEntity> findAll();
 
-    List<OrderEntity> listAllByCartId(Integer cartId);
+    List<OrderEntity> findAllByCartId(Integer cartId);
 
     void deleteById(Integer orderId);
-
-    void deleteAllByCartId(Integer cartId);
 }

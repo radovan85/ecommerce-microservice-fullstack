@@ -1,5 +1,6 @@
 package com.radovan.spring.interceptors;
 
+import com.radovan.spring.utils.TokenUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -32,7 +33,7 @@ public class AuthInterceptor implements HandlerInterceptor {
 		}
 
 		try {
-			customerNatsSender.retrieveCurrentUser();
+			customerNatsSender.retrieveCurrentUser(TokenUtils.provideToken());
 			return true;
 		} catch (SuspendedUserException e) {
 			// System.err.println("*** [ERROR] Suspendovan korisnik detektovan: " +
@@ -42,7 +43,6 @@ public class AuthInterceptor implements HandlerInterceptor {
 			throw e;
 			// return false;
 		} catch (Exception e) {
-			System.err.println("*** [ERROR] Greška pri proveri korisnika: " + e.getMessage());
 			return true;
 		}
 	}

@@ -29,7 +29,7 @@ export class LoginComponent {
 
   executeLoginForm() {
     var form = document.getElementById(`loginForm`) as HTMLFormElement;
-    var alertMessage = document.getElementById(`alertMessage`);
+    var alertMessage = document.getElementById(`error-message`);
     var authUser: User = new User;
     form.addEventListener(`submit`, async (event) => {
       event.preventDefault();
