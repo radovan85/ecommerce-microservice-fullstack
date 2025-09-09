@@ -67,14 +67,14 @@ jobs:
       - name: Build and Push Docker Images
         run: |
           IMAGE_PREFIX=ghcr.io/${{ github.repository_owner }}
-          docker build -t $IMAGE_PREFIX/ecommerce/eureka-server:dev3 ./backend/eureka-server-app
-          docker build -t $IMAGE_PREFIX/ecommerce/api-gateway:dev3 ./backend/api-gateway
-          docker build -t $IMAGE_PREFIX/ecommerce/auth-service:dev3 ./backend/auth-service
-          docker build -t $IMAGE_PREFIX/ecommerce/customer-service:dev3 ./backend/customer-service
-          docker build -t $IMAGE_PREFIX/ecommerce/cart-service:dev3 ./backend/cart-service
-          docker build -t $IMAGE_PREFIX/ecommerce/product-service:dev3 ./backend/product-service
-          docker build -t $IMAGE_PREFIX/ecommerce/order-service:dev3 ./backend/order-service
-          docker build -t $IMAGE_PREFIX/ecommerce/angular-ecommerce:dev3 ./angular-frontend
+          docker build -t $IMAGE_PREFIX/ecommerce/eureka-server:main ./backend/eureka-server-app
+          docker build -t $IMAGE_PREFIX/ecommerce/api-gateway:main ./backend/api-gateway
+          docker build -t $IMAGE_PREFIX/ecommerce/auth-service:main ./backend/auth-service
+          docker build -t $IMAGE_PREFIX/ecommerce/customer-service:main ./backend/customer-service
+          docker build -t $IMAGE_PREFIX/ecommerce/cart-service:main ./backend/cart-service
+          docker build -t $IMAGE_PREFIX/ecommerce/product-service:main ./backend/product-service
+          docker build -t $IMAGE_PREFIX/ecommerce/order-service:main ./backend/order-service
+          docker build -t $IMAGE_PREFIX/ecommerce/angular-ecommerce:main ./angular-frontend
 
           docker push $IMAGE_PREFIX/ecommerce/eureka-server:main
           docker push $IMAGE_PREFIX/ecommerce/api-gateway:main
