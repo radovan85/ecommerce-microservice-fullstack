@@ -40,7 +40,7 @@ spec:
               do echo waiting for nats; sleep 2; done
       containers:
         - name: auth-service
-          image: ghcr.io/radovan85/auth-service:dev3
+          image: ghcr.io/radovan85/ecommerce/auth-service:main
           imagePullPolicy: IfNotPresent
           env:
             - name: DB_URL

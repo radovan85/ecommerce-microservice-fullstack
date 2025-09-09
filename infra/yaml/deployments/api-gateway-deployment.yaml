@@ -24,7 +24,7 @@ spec:
               do echo waiting for eureka; sleep 2; done
       containers:
         - name: api-gateway
-          image: ghcr.io/radovan85/api-gateway:dev3
+          image: ghcr.io/radovan85/ecommerce/api-gateway:main
           imagePullPolicy: Always
           ports:
             - containerPort: 8080

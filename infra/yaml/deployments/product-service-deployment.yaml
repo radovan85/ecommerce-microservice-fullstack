@@ -40,7 +40,7 @@ spec:
               do echo waiting for eureka; sleep 2; done
       containers:
         - name: product-service
-          image: ghcr.io/radovan85/product-service:dev3
+          image: ghcr.io/radovan85/ecommerce/product-service:main
           imagePullPolicy: Always
           ports:
             - containerPort: 9000

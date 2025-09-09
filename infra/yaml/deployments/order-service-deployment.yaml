@@ -40,7 +40,7 @@ spec:
               do echo waiting for nats; sleep 2; done
       containers:
         - name: order-service
-          image: ghcr.io/radovan85/order-service:dev3
+          image: ghcr.io/radovan85/ecommerce/order-service:main
           imagePullPolicy: Always
           ports:
             - containerPort: 9000

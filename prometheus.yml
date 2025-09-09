@@ -26,7 +26,7 @@ scrape_configs:
   - job_name: 'cart-service'
     metrics_path: '/prometheus'
     static_configs:
-      - targets: [ 'cart-service:9000' ]
+      - targets: [ 'cart-service:8082' ]
 
   - job_name: 'product-service'
     metrics_path: '/prometheus'

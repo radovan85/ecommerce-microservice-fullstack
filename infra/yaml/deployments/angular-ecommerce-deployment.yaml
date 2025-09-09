@@ -24,7 +24,7 @@ spec:
               do echo waiting for api-gateway; sleep 2; done
       containers:
         - name: angular-ecommerce
-          image: ghcr.io/radovan85/angular-ecommerce:dev3
+          image: ghcr.io/radovan85/ecommerce/angular-ecommerce:main
           imagePullPolicy: Always
           ports:
             - containerPort: 4200

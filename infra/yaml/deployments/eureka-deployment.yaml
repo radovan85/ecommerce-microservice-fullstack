@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: eureka-server
-          image: ghcr.io/radovan85/eureka-server:dev3
+          image: ghcr.io/radovan85/ecommerce/eureka-server:main
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8761
