@@ -44,7 +44,7 @@ public class EurekaRegistrationServiceImpl implements EurekaRegistrationService 
 			instanceData.put("hostName", hostname); // Koristi hostname
 			instanceData.put("ipAddr", ipAddr); // Dinamički dohvaćena IP adresa
 			instanceData.put("statusPageUrl", "http://" + ipAddr + ":" + port + "/info");
-			instanceData.put("healthCheckUrl", "http://" + ipAddr + ":" + port + "/health");
+			instanceData.put("healthCheckUrl", "http://" + ipAddr + ":" + port + "/api/health");
 			instanceData.put("homePageUrl", "http://" + ipAddr + ":" + port + "/");
 			instanceData.put("vipAddress", appName);
 			instanceData.put("secureVipAddress", appName);

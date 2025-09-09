@@ -1,5 +1,6 @@
 package com.radovan.spring.services;
 
+
 public interface PrometheusService {
 
 	void increaseRequestCount();
@@ -21,4 +22,6 @@ public interface PrometheusService {
 	void updateHttpStatusCount(int statusCode);
 
 	void updateExternalApiLatency(double duration);
+
+	void updateControllerMethodTags(String controller, String method);
 }

@@ -1,6 +1,8 @@
 version: '3.8'
 
 services:
+
+  # 🧭 Service Discovery
   eureka-server:
     build:
       context: ./backend/eureka-server-app
@@ -14,15 +16,12 @@ services:
     environment:
       - JAVA_OPTS=-Xms256m -Xmx512m
     healthcheck:
-      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:8761/actuator/health || exit 1"]
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://eureka-server:8761/actuator/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
 
-
-
-
-
+  # 🗄️ PostgreSQL Database
   postgres:
     image: postgres:15
     container_name: ecommerce-db
@@ -41,6 +40,7 @@ services:
       - ecommerce-network
     restart: unless-stopped
 
+  # 📡 NATS Messaging
   nats:
     image: nats:latest
     container_name: nats
@@ -49,7 +49,13 @@ services:
     networks:
       - ecommerce-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "nats-server", "-sl"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
+  # 📊 Prometheus Monitoring
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
@@ -64,6 +70,7 @@ services:
       - monitoring
     restart: unless-stopped
 
+  # 📈 Grafana Dashboard
   grafana:
     image: grafana/grafana:latest
     container_name: grafana
@@ -79,6 +86,7 @@ services:
       - monitoring
     restart: unless-stopped
 
+  # 🚪 API Gateway
   api-gateway:
     build:
       context: ./backend/api-gateway
@@ -87,8 +95,8 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - SPRING_APPLICATION_NAME=api-gateway
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - APP_NAME=api-gateway
+      - EUREKA_URL=http://eureka-server:8761/eureka/
       - JAVA_OPTS=-Xms256m -Xmx512m
     depends_on:
       eureka-server:
@@ -96,6 +104,7 @@ services:
     networks:
       - ecommerce-network
 
+  # 🔐 Auth Service
   auth-service:
     build:
       context: ./backend/auth-service
@@ -122,6 +131,7 @@ services:
         condition: service_started
     restart: unless-stopped
 
+  # 👤 Customer Service
   customer-service:
     build:
       context: ./backend/customer-service
@@ -148,7 +158,7 @@ services:
         condition: service_started
     restart: unless-stopped
 
-
+  # 🛒 Cart Service
   cart-service:
     build:
       context: ./backend/cart-service
@@ -175,7 +185,7 @@ services:
         condition: service_started
     restart: unless-stopped
 
-
+  # 📦 Order Service (Play Framework)
   order-service:
     build:
       context: ./backend/order-service
@@ -190,10 +200,8 @@ services:
       - NATS_URL=nats://nats:4222
       - SERVICE_NAME=order-service
       - EUREKA_URL=http://eureka-server:8761/eureka
-      - PLAY_SECRET=NpbOJnFle1GUPvnFVPwLkrOgrD`a^R2xO6U<D@:Q>@vcDD<[j9c4yZr^w6Hz`yqo
+      - PLAY_SECRET=fKyGhoSE=@RWWY7HPpU;fM=zzKl]M>jEfxM;@770K3Cs@Q5r2[zV=48WqY^jDDgj
       - PLAY_SERVER_HTTP_PORT=9000
-    networks:
-      - ecommerce-network
     depends_on:
       postgres:
         condition: service_healthy
@@ -201,9 +209,11 @@ services:
         condition: service_started
       eureka-server:
         condition: service_healthy
+    networks:
+      - ecommerce-network
     restart: unless-stopped
 
-
+  # 🛍️ Product Service (Play Framework)
   product-service:
     build:
       context: ./backend/product-service
@@ -218,10 +228,8 @@ services:
       - NATS_URL=nats://nats:4222
       - SERVICE_NAME=product-service
       - EUREKA_URL=http://eureka-server:8761/eureka
-      - PLAY_SECRET=0oVEgv<v_[pJwSJf`x4u[54>y<fRP=q^M0j<bKJYI^5`Jh:hcpSF4C_[O`xo9/SC
+      - PLAY_SECRET=34LUhrmupYCGYEkxo55QaiSX;Rp/1zGLu?Ia6><P[=oJKtoIam1=YF9T9E1gHhtP
       - PLAY_SERVER_HTTP_PORT=9000
-    networks:
-      - ecommerce-network
     depends_on:
       postgres:
         condition: service_healthy
@@ -229,9 +237,11 @@ services:
         condition: service_started
       eureka-server:
         condition: service_healthy
+    networks:
+      - ecommerce-network
     restart: unless-stopped
 
-
+  # 🌐 Angular Frontend
   angular-ecommerce:
     build:
       context: ./angular-frontend
@@ -245,14 +255,7 @@ services:
       - api-gateway
     restart: unless-stopped
 
-
-
-
-
-volumes:
-  pg_data:
-  grafana-storage:
-
+# 🌐 Network Definitions
 networks:
   eureka-net:
     driver: bridge
@@ -260,3 +263,8 @@ networks:
     driver: bridge
   monitoring:
     driver: bridge
+
+# 📦 Volume Definitions
+volumes:
+  pg_data:
+  grafana-storage:

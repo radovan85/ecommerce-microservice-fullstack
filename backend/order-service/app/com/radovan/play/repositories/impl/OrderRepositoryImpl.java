@@ -2,10 +2,12 @@ package com.radovan.play.repositories.impl;
 
 import com.radovan.play.entity.OrderEntity;
 import com.radovan.play.repositories.OrderRepository;
+import com.radovan.play.services.PrometheusService;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -19,14 +21,17 @@ import java.util.function.Function;
 public class OrderRepositoryImpl implements OrderRepository {
 
     private SessionFactory sessionFactory;
+    private PrometheusService prometheusService;
 
     @Inject
-    private void initialize(SessionFactory sessionFactory) {
+    private void initialize(SessionFactory sessionFactory, PrometheusService prometheusService) {
         this.sessionFactory = sessionFactory;
+        this.prometheusService = prometheusService;
     }
 
     // Generic method for handling transactions with SessionFactory
     private <T> T withSession(Function<Session, T> function) {
+        prometheusService.updateDatabaseQueryCount();
         try (Session session = sessionFactory.openSession()) {
             Transaction tx = session.beginTransaction();
             try {
@@ -77,17 +82,20 @@ public class OrderRepositoryImpl implements OrderRepository {
     }
 
     @Override
-    public List<OrderEntity> listAllByCartId(Integer cartId) {
+    public List<OrderEntity> findAllByCartId(Integer cartId) {
         return withSession(session -> {
             CriteriaBuilder cb = session.getCriteriaBuilder();
-            CriteriaQuery<OrderEntity> query = cb.createQuery(OrderEntity.class);
-            Root<OrderEntity> root = query.from(OrderEntity.class);
+            CriteriaQuery<OrderEntity> cq = cb.createQuery(OrderEntity.class);
+            Root<OrderEntity> root = cq.from(OrderEntity.class);
 
-            query.select(root).where(cb.equal(root.get("cartId"), cartId));
+            Predicate byCartId = cb.equal(root.get("cartId"), cartId);
+            cq.where(byCartId);
+            cq.select(root);
 
-            return session.createQuery(query).getResultList();
+            return session.createQuery(cq).getResultList();
         });
     }
+
 
 
 
@@ -103,15 +111,6 @@ public class OrderRepositoryImpl implements OrderRepository {
     }
 
 
-    @Override
-    public void deleteAllByCartId(Integer cartId) {
-        withSession(session -> {
-            String hql = "DELETE FROM OrderEntity o WHERE o.cartId = :cartId";
-            session.createMutationQuery(hql)
-                    .setParameter("cartId", cartId)
-                    .executeUpdate();
-            return null;
-        });
-    }
+
 
 }

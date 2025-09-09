@@ -11,13 +11,13 @@ public interface ProductService {
 
     ProductDto getProductById(Integer productId);
 
-    ProductDto updateProduct(ProductDto product, Integer productId);
+    ProductDto updateProduct(ProductDto product, Integer productId,String jwtToken);
 
-    void deleteProduct(Integer productId);
+    void deleteProduct(Integer productId,String jwtToken);
 
     List<ProductDto> listAll();
 
     List<ProductDto> listAllByCategoryId(Integer categoryId);
 
-    void deleteProductsByCategoryId(Integer categoryId);
+    void deleteProductsByCategoryId(Integer categoryId,String jwtToken);
 }

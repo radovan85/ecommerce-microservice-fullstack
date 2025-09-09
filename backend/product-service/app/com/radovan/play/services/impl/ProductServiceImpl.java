@@ -45,7 +45,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public ProductDto updateProduct(ProductDto product, Integer productId) {
+    public ProductDto updateProduct(ProductDto product, Integer productId,String jwtToken) {
         categoryService.getCategoryById(product.getProductCategoryId());
         ProductDto currentProduct = getProductById(productId);
         product.setProductId(currentProduct.getProductId());
@@ -64,12 +64,12 @@ public class ProductServiceImpl implements ProductService {
 
 
     @Override
-    public void deleteProduct(Integer productId) {
+    public void deleteProduct(Integer productId,String jwtToken) {
         getProductById(productId);
 
         // ✅ Šaljemo NATS poruku ka `cart-service` da ukloni sve stavke koje koriste taj proizvod
         //natsUtils.getConnection().publish("cart.removeAllByProductId." + productId, new byte[0]);
-        productNatsSender.sendCartDeleteRequest(productId);
+        productNatsSender.sendCartDeleteRequest(productId,jwtToken);
         productRepository.deleteById(productId);
     }
 
@@ -89,8 +89,8 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public void deleteProductsByCategoryId(Integer categoryId) {
+    public void deleteProductsByCategoryId(Integer categoryId,String jwtToken) {
         List<ProductDto> allProducts = listAllByCategoryId(categoryId);
-        allProducts.forEach((product) -> deleteProduct(product.getProductId()));
+        allProducts.forEach((product) -> deleteProduct(product.getProductId(),jwtToken));
     }
 }

@@ -1,21 +1,23 @@
 package com.radovan.spring.config;
 
 import java.util.Properties;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.dao.annotation.PersistenceExceptionTranslationPostProcessor;
-import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.orm.jpa.JpaVendorAdapter;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
+
 import com.zaxxer.hikari.HikariDataSource;
+
+import jakarta.persistence.EntityManagerFactory;
 
 @Configuration
 @EnableTransactionManagement
-@EnableJpaRepositories(basePackages = "com.radovan.spring.repositories")
 public class JpaPersistence {
 
     @Bean
@@ -28,29 +30,25 @@ public class JpaPersistence {
         em.setJpaVendorAdapter(vendorAdapter);
         em.setJpaProperties(additionalProperties());
 
+        // Postavljanje interfejsa EntityManagerFactory
+        em.setEntityManagerFactoryInterface(EntityManagerFactory.class);
+
         return em;
     }
 
+
     @Bean
     public HikariDataSource getHikariDataSource() {
-        HikariDataSource dataSource = new HikariDataSource();
-        dataSource.setDriverClassName("org.postgresql.Driver");
-
-        // Korišćenje ispravnih ENV varijabli definisanih u Dockerfile i docker-compose.yml
+        HikariDataSource hikariConfig = new HikariDataSource();
+        hikariConfig.setDriverClassName("org.postgresql.Driver");
         String dbUrl = System.getenv("DB_URL");
-        String dbUsername = System.getenv("DB_USERNAME");
         String dbPassword = System.getenv("DB_PASSWORD");
-
-        // Provera da nisu null
-        if (dbUrl == null || dbUsername == null || dbPassword == null) {
-            throw new IllegalStateException("Database environment variables are missing!");
-        }
-
-        dataSource.setJdbcUrl(dbUrl);
-        dataSource.setUsername(dbUsername);
-        dataSource.setPassword(dbPassword);
-
-        return dataSource;
+        String dbUsername = System.getenv("DB_USERNAME");
+        if (dbUrl == null || dbUsername == null || dbPassword == null) throw new IllegalStateException("Database environment variables are missing!");
+        hikariConfig.setJdbcUrl(dbUrl);
+        hikariConfig.setUsername(dbUsername);
+        hikariConfig.setPassword(dbPassword);
+        return hikariConfig;
     }
 
     @Bean
@@ -65,10 +63,10 @@ public class JpaPersistence {
         return new PersistenceExceptionTranslationPostProcessor();
     }
 
-    Properties additionalProperties() {
+    private Properties additionalProperties() {
         Properties properties = new Properties();
-        properties.setProperty("hibernate.hbm2ddl.auto", "update");
-        //properties.setProperty("hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect"); // Dodato!
+        properties.setProperty("hibernate.hbm2ddl.auto", "update"); // Kontrola kreiranja šeme
+        properties.setProperty("hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect"); // Dialekt baze
         return properties;
     }
 }

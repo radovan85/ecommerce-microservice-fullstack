@@ -1,13 +1,20 @@
 package com.radovan.spring.repositories;
 
 import com.radovan.spring.entity.UserEntity;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
-@Repository
-public interface UserRepository extends JpaRepository<UserEntity, Integer> {
+public interface UserRepository {
+
+    List<UserEntity> findAll();
+
+    Optional<UserEntity> findById(Integer userId);
 
     Optional<UserEntity> findByEmail(String email);
+
+    UserEntity save(UserEntity userEntity);
+
+    void deleteById(Integer userId);
 }
+

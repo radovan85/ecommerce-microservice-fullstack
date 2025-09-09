@@ -1,260 +1,297 @@
 package com.radovan.spring.broker;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.radovan.spring.dto.CartDto;
-import com.radovan.spring.dto.CartItemDto;
+
+import com.radovan.spring.entity.CartEntity;
 import com.radovan.spring.exceptions.InvalidCartException;
+import com.radovan.spring.repositories.CartRepository;
 import com.radovan.spring.services.CartItemService;
 import com.radovan.spring.services.CartService;
 import com.radovan.spring.utils.NatsUtils;
+import io.nats.client.Connection;
 import io.nats.client.Dispatcher;
 import io.nats.client.Message;
+import io.nats.client.MessageHandler;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
-import java.util.List;
+
+import java.time.Instant;
+import java.util.Optional;
 
 @Component
 public class CartNatsListener {
 
-	private static final String CART_RESPONSE_QUEUE = "cart.response";
-	private static final String CART_ITEMS_PREFIX = "cart.items.list.";
-	private static final String CART_REFRESH_PREFIX = "cart.refresh.";
-	private static final String CART_REMOVE_ITEMS_PREFIX = "cart.items.removeAll.";
+    private  NatsUtils natsUtils;
+    private  CartRepository cartRepository;
+    private  ObjectMapper objectMapper;
+    private  CartItemService cartItemService;
+    private  CartService cartService;
 
-	private final NatsUtils natsUtils;
-	private final CartItemService cartItemService;
-	private final CartService cartService;
-	private final ObjectMapper objectMapper;
+    @Autowired
+    private void initialize(NatsUtils natsUtils, CartRepository cartRepository,
+                            ObjectMapper objectMapper, CartItemService cartItemService,
+                            CartService cartService) {
+        this.natsUtils = natsUtils;
+        this.cartRepository = cartRepository;
+        this.objectMapper = objectMapper;
+        this.cartItemService = cartItemService;
+        this.cartService = cartService;
+        initListeners();
+    }
 
-	@Autowired
-	public CartNatsListener(NatsUtils natsUtils, CartItemService cartItemService, CartService cartService,
-			ObjectMapper objectMapper) {
-		this.natsUtils = natsUtils;
-		this.cartItemService = cartItemService;
-		this.cartService = cartService;
-		this.objectMapper = objectMapper;
-		initializeListeners();
-	}
 
-	private void initializeListeners() {
-		Dispatcher dispatcher = natsUtils.getConnection().createDispatcher(this::handleMessage);
-		dispatcher.subscribe("cart.updateAllByProductId.*");
-		dispatcher.subscribe("cart.removeAllByProductId.*");
-		dispatcher.subscribe("cart.create");
-		dispatcher.subscribe("cart.delete.*");
-		dispatcher.subscribe("cart.getById.*");
-		dispatcher.subscribe("cart.validate.*");
-		dispatcher.subscribe(CART_ITEMS_PREFIX + "*");
-		dispatcher.subscribe(CART_REFRESH_PREFIX + "*");
-		dispatcher.subscribe(CART_REMOVE_ITEMS_PREFIX + "*");
-	}
+    public void initListeners() {
+        Connection connection = natsUtils.getConnection();
+        if (connection != null) {
+            Dispatcher dispatcher = connection.createDispatcher();
+            dispatcher.subscribe("cart.create", onCartCreate);
+            dispatcher.subscribe("cart.updateAllByProductId.*", onCartUpdate);
+            dispatcher.subscribe("cart.delete.*", onCartDelete);
+            dispatcher.subscribe("cart.removeAllByProductId.*", onProductDelete);
+            dispatcher.subscribe("cart.validate.*", onCartValidate);
+            dispatcher.subscribe("cart.getItems.*", getCartItems);
+            dispatcher.subscribe("cart.removeAllByCartId.*", onCartClearById);
+            dispatcher.subscribe("cart.refreshState.*", onCartRefreshState);
+        } else {
+            System.err.println("*** NATS connection unavailable — cart.create listener not initialized");
+        }
+    }
 
-	private void handleMessage(Message msg) {
-		try {
-			switch (msg.getSubject()) {
-			case "cart.create":
-				handleCartCreate(msg);
-				break;
-			default:
-				if (msg.getSubject().startsWith("cart.updateAllByProductId.")) {
-					handleCartUpdate(msg);
-				} else if (msg.getSubject().startsWith("cart.removeAllByProductId.")) {
-					handleCartRemove(msg);
-				} else if (msg.getSubject().startsWith("cart.delete.")) {
-					handleCartDelete(msg);
-				} else if (msg.getSubject().startsWith("cart.getById.")) {
-					handleGetCartById(msg);
-				} else if (msg.getSubject().startsWith("cart.validate.")) {
-					handleValidateCart(msg);
-				} else if (msg.getSubject().startsWith(CART_ITEMS_PREFIX)) {
-					handleListCartItems(msg);
-				} else if (msg.getSubject().startsWith(CART_REFRESH_PREFIX)) {
-					handleRefreshCart(msg);
-				} else if (msg.getSubject().startsWith(CART_REMOVE_ITEMS_PREFIX)) {
-					handleRemoveAllItems(msg);
-				}
-				break;
-			}
-		} catch (Exception e) {
-			sendErrorResponse(getReplyTo(msg), "Error processing request: " + e.getMessage(),
-					HttpStatus.INTERNAL_SERVER_ERROR);
-		}
-	}
+    private final MessageHandler onCartCreate = (Message msg) -> {
+        try {
+            CartEntity newCart = new CartEntity();
+            newCart.setCartPrice(0f);
+            CartEntity savedCart = cartRepository.save(newCart);
 
-	private void handleValidateCart(Message msg) {
-		try {
-			Integer cartId = extractIdFromSubject(msg.getSubject(), "cart.validate.");
-			CartDto cart = cartService.validateCart(cartId);
-			ObjectNode responseNode = objectMapper.createObjectNode();
-			responseNode.putPOJO("cart", cart);
-			sendResponse(getReplyTo(msg), responseNode);
-		} catch (InvalidCartException e) {
-			sendErrorResponse(getReplyTo(msg), "Cart is empty and cannot be validated", HttpStatus.NOT_ACCEPTABLE);
-		} catch (Exception e) {
-			sendErrorResponse(getReplyTo(msg), "Failed to validate cart: " + e.getMessage(),
-					HttpStatus.INTERNAL_SERVER_ERROR);
-		}
-	}
+            ObjectNode response = objectMapper.createObjectNode();
+            response.put("status", 200);
+            response.put("id", savedCart.getCartId());
 
-	private void handleRefreshCart(Message msg) {
-		try {
-			Integer cartId = extractIdFromSubject(msg.getSubject(), CART_REFRESH_PREFIX);
-			cartService.refreshCartState(cartId);
-			sendSuccessResponse(msg.getReplyTo(), "Cart refreshed successfully");
-		} catch (Exception e) {
-			sendErrorResponse(getReplyTo(msg), "Failed to refresh cart: " + e.getMessage(),
-					HttpStatus.INTERNAL_SERVER_ERROR);
-		}
-	}
+            String replyTo = msg.getReplyTo();
+            if (replyTo != null) {
+                natsUtils.getConnection().publish(replyTo, safeBytes(response));
+            }
 
-	private void handleRemoveAllItems(Message msg) {
-		try {
-			Integer cartId = extractIdFromSubject(msg.getSubject(), CART_REMOVE_ITEMS_PREFIX);
-			cartItemService.removeAllByCartId(cartId);
-			sendSuccessResponse(msg.getReplyTo(), "All cart items removed successfully");
-		} catch (Exception e) {
-			sendErrorResponse(getReplyTo(msg), "Failed to remove cart items: " + e.getMessage(),
-					HttpStatus.INTERNAL_SERVER_ERROR);
-		}
-	}
+        } catch (Exception ex) {
+            ObjectNode error = objectMapper.createObjectNode();
+            error.put("status", 500);
+            error.put("message", "Cart creation failed: " + ex.getMessage());
 
-	private void handleListCartItems(Message msg) {
-		try {
-			Integer cartId = extractIdFromSubject(msg.getSubject(), CART_ITEMS_PREFIX);
-			List<CartItemDto> cartItems = cartItemService.listAllByCartId(cartId);
+            String replyTo = msg.getReplyTo();
+            if (replyTo != null) {
+                natsUtils.getConnection().publish(replyTo, safeBytes(error));
+            }
+        }
+    };
 
-			ObjectNode responseNode = objectMapper.createObjectNode();
-			ArrayNode itemsArray = responseNode.putArray("cartItems");
 
-			for (CartItemDto item : cartItems) {
-				itemsArray.add(objectMapper.valueToTree(item));
-			}
+    private final MessageHandler onCartUpdate = (Message msg) -> {
+        try {
+            JsonNode payload = objectMapper.readTree(msg.getData());
+            int productId = extractIdFromSubject(msg.getSubject(), "cart.updateAllByProductId.");
+            String jwtToken = Optional.ofNullable(payload.get("Authorization"))
+                    .map(JsonNode::asText)
+                    .orElse("");
 
-			sendResponse(getReplyTo(msg), responseNode);
-		} catch (Exception e) {
-			sendErrorResponse(getReplyTo(msg), "Failed to list cart items: " + e.getMessage(),
-					HttpStatus.INTERNAL_SERVER_ERROR);
-		}
-	}
+            cartItemService.updateAllByProductId(productId, jwtToken);
 
-	private void handleCartUpdate(Message msg) {
+            ObjectNode response = objectMapper.createObjectNode();
+            response.put("status", 200);
+            response.put("message", "Cart items updated");
+            publishResponse(msg.getReplyTo(), response);
+        } catch (Exception ex) {
+            ObjectNode error = objectMapper.createObjectNode();
+            error.put("status", 500);
+            error.put("message", "Update failed: " + ex.getMessage());
+            publishResponse(msg.getReplyTo(), error);
+        }
+    };
 
-		String jwtToken = null;
+    private final MessageHandler onCartDelete = (Message msg) -> {
+        try {
+            JsonNode payload = objectMapper.readTree(msg.getData());
+            int cartId = extractIdFromSubject(msg.getSubject(), "cart.delete.");
+            String jwtToken = Optional.ofNullable(payload.get("Authorization"))
+                    .map(JsonNode::asText)
+                    .orElse("");
 
-		try {
-			ObjectNode payload = objectMapper.readTree(msg.getData()).deepCopy();
-			jwtToken = payload.has("Authorization") ? payload.get("Authorization").asText() : null;
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+            cartRepository.deleteById(cartId);
 
-		// ✅ Postavljamo autentifikaciju u Spring Security samo ako imamo validan token
-		if (jwtToken != null) {
-			SecurityContextHolder.getContext().setAuthentication(
-					new UsernamePasswordAuthenticationToken(null, jwtToken, Collections.emptyList()));
-		}
+            ObjectNode response = objectMapper.createObjectNode();
+            response.put("status", 200);
+            response.put("message", "Cart deleted");
+            publishResponse(msg.getReplyTo(), response);
+        } catch (Exception ex) {
+            ObjectNode error = objectMapper.createObjectNode();
+            error.put("status", 500);
+            error.put("message", "Delete failed: " + ex.getMessage());
+            publishResponse(msg.getReplyTo(), error);
+        }
+    };
 
-		try {
-			cartItemService.updateAllByProductId(extractProductId(msg));
-		} catch (Exception e) {
-			sendErrorResponse(getReplyTo(msg), "Failed to update cart items: " + e.getMessage(),
-					HttpStatus.INTERNAL_SERVER_ERROR);
-		}
-	}
+    private final MessageHandler onCartValidate = (Message msg) -> {
+        try {
+            int cartId = extractIdFromSubject(msg.getSubject(), "cart.validate.");
+            JsonNode payload = objectMapper.readTree(msg.getData());
+            String jwtToken = Optional.ofNullable(payload.get("Authorization"))
+                    .map(JsonNode::asText)
+                    .orElse("");
 
-	private void handleCartRemove(Message msg) {
-		try {
-			cartItemService.removeAllByProductId(extractProductId(msg));
-		} catch (Exception e) {
-			sendErrorResponse(getReplyTo(msg), "Failed to remove cart items: " + e.getMessage(),
-					HttpStatus.INTERNAL_SERVER_ERROR);
-		}
-	}
+            Object cartDto = cartService.validateCart(cartId);
+            JsonNode responseJson = objectMapper.valueToTree(cartDto);
 
-	private void handleCartCreate(Message msg) {
-		try {
-			CartDto newCart = cartService.addCart();
-			ObjectNode responseNode = objectMapper.createObjectNode();
-			responseNode.put("cartId", newCart.getCartId());
-			sendResponse(getReplyTo(msg), responseNode);
-		} catch (Exception e) {
-			sendErrorResponse(getReplyTo(msg), "Failed to create cart: " + e.getMessage(),
-					HttpStatus.INTERNAL_SERVER_ERROR);
-		}
-	}
+            publishResponse(msg.getReplyTo(), (ObjectNode) responseJson);
+        } catch (InvalidCartException ex) {
+            System.out.println("[DEBUG] Caught InvalidCartException directly");
+            ObjectNode error = objectMapper.createObjectNode();
+            error.put("status", 406);
+            error.put("message", "Validation failed: " + ex.getMessage());
+            publishResponse(msg.getReplyTo(), error);
+        } catch (Exception ex) {
+            System.out.println("[DEBUG] Caught generic exception: " + ex.getClass().getName());
+            Throwable cause = ex.getCause();
+            boolean isInvalidCart = (cause != null && cause instanceof InvalidCartException);
+            ObjectNode error = objectMapper.createObjectNode();
+            error.put("status", isInvalidCart ? 406 : 500);
+            error.put("message", "Validation failed: " + ex.getMessage());
+            publishResponse(msg.getReplyTo(), error);
+        }
+    };
 
-	private void handleCartDelete(Message msg) {
-		try {
-			cartService.deleteCart(extractCartId(msg));
-		} catch (Exception e) {
-			sendErrorResponse(getReplyTo(msg), "Failed to delete cart: " + e.getMessage(),
-					HttpStatus.INTERNAL_SERVER_ERROR);
-		}
-	}
+    private final MessageHandler getCartItems = (Message msg) -> {
+        try {
+            int cartId = extractIdFromSubject(msg.getSubject(), "cart.getItems.");
+            JsonNode payload = objectMapper.readTree(msg.getData());
+            String jwtToken = Optional.ofNullable(payload.get("Authorization"))
+                    .map(JsonNode::asText)
+                    .orElse("");
 
-	private void handleGetCartById(Message msg) {
-		try {
-			Integer cartId = extractIdFromSubject(msg.getSubject(), "cart.getById.");
-			CartDto cart = cartService.getCartById(cartId);
-			ObjectNode responseNode = objectMapper.createObjectNode();
-			responseNode.putPOJO("cart", cart);
-			sendResponse(getReplyTo(msg), responseNode);
-		} catch (Exception e) {
-			sendErrorResponse(getReplyTo(msg), "Failed to get cart: " + e.getMessage(),
-					HttpStatus.INTERNAL_SERVER_ERROR);
-		}
-	}
+            Iterable<?> cartItemDtos = cartItemService.listAllByCartId(cartId);
 
-	private Integer extractProductId(Message msg) {
-		return extractIdFromSubject(msg.getSubject(), "cart.(updateAllByProductId|removeAllByProductId)\\.");
-	}
+            ArrayNode itemsArrayNode = objectMapper.createArrayNode();
+            for (Object dto : cartItemDtos) {
+                JsonNode jsonNode = objectMapper.valueToTree(dto);
+                itemsArrayNode.add(jsonNode);
+            }
 
-	private Integer extractCartId(Message msg) {
-		return extractIdFromSubject(msg.getSubject(), "cart.delete.");
-	}
+            ObjectNode responseJson = objectMapper.createObjectNode();
+            responseJson.set("items", itemsArrayNode);
+            responseJson.put("status", 200);
+            responseJson.put("cartId", cartId);
+            responseJson.put("timestamp", Instant.now().toString());
 
-	private Integer extractIdFromSubject(String subject, String prefix) {
-		return Integer.parseInt(subject.replaceAll(prefix, ""));
-	}
+            publishResponse(msg.getReplyTo(), responseJson);
+        } catch (Exception ex) {
+            ObjectNode errorJson = objectMapper.createObjectNode();
+            errorJson.put("status", 500);
+            errorJson.put("message", "Error retrieving items: " + ex.getMessage());
+            publishResponse(msg.getReplyTo(), errorJson);
+        }
+    };
 
-	private void sendResponse(String replyTo, ObjectNode responseNode) {
-		try {
-			if (replyTo != null && !replyTo.isEmpty()) {
-				natsUtils.getConnection().publish(replyTo, objectMapper.writeValueAsBytes(responseNode));
-			}
-		} catch (Exception e) {
-			throw new RuntimeException("Failed to send response", e);
-		}
-	}
+    private final MessageHandler onProductDelete = (Message msg) -> {
+        try {
+            int productId = extractIdFromSubject(msg.getSubject(), "cart.removeAllByProductId.");
+            JsonNode payload = objectMapper.readTree(msg.getData());
+            String jwtToken = Optional.ofNullable(payload.get("Authorization"))
+                    .map(JsonNode::asText)
+                    .orElse("");
 
-	private void sendSuccessResponse(String replyTo, String message) {
-		ObjectNode responseNode = objectMapper.createObjectNode();
-		responseNode.put("status", "SUCCESS");
-		responseNode.put("message", message);
-		sendResponse(replyTo, responseNode);
-	}
+            cartItemService.removeAllByProductId(productId);
 
-	private void sendErrorResponse(String replyTo, String errorMessage, HttpStatus status) {
-		try {
-			if (replyTo != null && !replyTo.isEmpty()) {
-				ObjectNode errorNode = objectMapper.createObjectNode();
-				errorNode.put("error", errorMessage);
-				errorNode.put("status", status.value());
-				errorNode.put("message", errorMessage);
-				natsUtils.getConnection().publish(replyTo, objectMapper.writeValueAsBytes(errorNode));
-			}
-		} catch (Exception ignored) {
-		}
-	}
+            ObjectNode response = objectMapper.createObjectNode();
+            response.put("status", 200);
+            response.put("message", "Product removed from carts");
+            publishResponse(msg.getReplyTo(), response);
+        } catch (Exception ex) {
+            ObjectNode error = objectMapper.createObjectNode();
+            error.put("status", 500);
+            error.put("message", "Remove failed: " + ex.getMessage());
+            publishResponse(msg.getReplyTo(), error);
+        }
+    };
 
-	private String getReplyTo(Message msg) {
-		return msg.getReplyTo() != null && !msg.getReplyTo().isEmpty() ? msg.getReplyTo() : CART_RESPONSE_QUEUE;
-	}
+    private final MessageHandler onCartClearById = (Message msg) -> {
+        try {
+            int cartId = extractIdFromSubject(msg.getSubject(), "cart.removeAllByCartId.");
+            JsonNode payload = objectMapper.readTree(msg.getData());
+            String jwtToken = Optional.ofNullable(payload.get("Authorization"))
+                    .map(JsonNode::asText)
+                    .orElse("");
+
+            cartItemService.removeAllByCartId(cartId);
+
+            ObjectNode response = objectMapper.createObjectNode();
+            response.put("status", 200);
+            response.put("message", "All items removed from cart " + cartId);
+            publishResponse(msg.getReplyTo(), response);
+        } catch (Exception ex) {
+            ObjectNode error = objectMapper.createObjectNode();
+            error.put("status", 500);
+            error.put("message", "Failed to clear cart: " + ex.getMessage());
+            publishResponse(msg.getReplyTo(), error);
+        }
+    };
+
+    private final MessageHandler onCartRefreshState = (Message msg) -> {
+        try {
+            int cartId = extractIdFromSubject(msg.getSubject(), "cart.refreshState.");
+            JsonNode payload = objectMapper.readTree(msg.getData());
+            String jwtToken = Optional.ofNullable(payload.get("Authorization"))
+                    .map(JsonNode::asText)
+                    .orElse("");
+
+            cartService.refreshCartState(cartId);
+
+            ObjectNode response = objectMapper.createObjectNode();
+            response.put("status", 200);
+            response.put("message", "Cart state refreshed for cart " + cartId);
+            publishResponse(msg.getReplyTo(), response);
+        } catch (Exception ex) {
+            ObjectNode error = objectMapper.createObjectNode();
+            error.put("status", 500);
+            error.put("message", "Failed to refresh cart state: " + ex.getMessage());
+            publishResponse(msg.getReplyTo(), error);
+        }
+    };
+
+    private void publishResponse(String replyTo, ObjectNode node) {
+        if (replyTo != null && !replyTo.isEmpty()) {
+            try {
+                byte[] bytes = objectMapper.writeValueAsBytes(node);
+                natsUtils.getConnection().publish(replyTo, bytes);
+            } catch (Exception ex) {
+                System.err.println("Failed to publish response: " + ex.getMessage());
+            }
+        }
+    }
+
+    private int extractIdFromSubject(String subject, String prefix) {
+        String suffix = subject.replace(prefix, "");
+        try {
+            return Integer.parseInt(suffix);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Invalid ID in subject: " + subject);
+        }
+    }
+
+    private byte[] safeBytes(ObjectNode node) {
+        try {
+            return objectMapper.writeValueAsBytes(node);
+        } catch (Exception e) {
+            ObjectNode fallback = objectMapper.createObjectNode();
+            fallback.put("status", 500);
+            fallback.put("message", "Serialization error: " + e.getMessage());
+            try {
+                return objectMapper.writeValueAsBytes(fallback);
+            } catch (Exception ex) {
+                return "{\"status\":500,\"message\":\"Unrecoverable serialization error\"}".getBytes();
+            }
+        }
+    }
+
 }

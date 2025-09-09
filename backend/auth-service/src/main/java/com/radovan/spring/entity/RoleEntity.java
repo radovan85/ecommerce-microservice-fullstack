@@ -12,7 +12,6 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
-import jakarta.persistence.Transient;
 
 @Entity
 @Table(name = "roles")
@@ -27,7 +26,6 @@ public class RoleEntity implements GrantedAuthority {
     @Column(unique = true, nullable = false, length = 30)
     private String role;
 
-    @Transient
     @ManyToMany(mappedBy = "roles", fetch = FetchType.EAGER)
     private List<UserEntity> users;
 

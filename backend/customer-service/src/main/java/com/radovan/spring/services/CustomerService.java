@@ -15,13 +15,13 @@ public interface CustomerService {
 
 	List<CustomerDto> listAll();
 
-	void removeCustomer(Integer customerId);
-
 	CustomerDto updtadeCustomer(CustomerDto customer);
 
-	CustomerDto getCurrentCustomer();
+	CustomerDto getCurrentCustomer(String jwtToken);
 
-	void suspendCustomer(Integer customerId);
+	void removeCustomer(Integer customerId, String jwtToken);
 
-	void reactivateCustomer(Integer customerId);
+	void suspendCustomer(Integer customerId, String jwtToken);
+
+	void reactivateCustomer(Integer customerId, String jwtToken);
 }

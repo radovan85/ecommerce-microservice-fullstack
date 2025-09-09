@@ -6,9 +6,8 @@ import com.radovan.play.exceptions.DataNotValidatedException;
 import com.radovan.play.security.JwtAuthAction;
 import com.radovan.play.security.RoleSecured;
 import com.radovan.play.services.*;
+import com.radovan.play.utils.TokenUtils;
 import jakarta.inject.Inject;
-import play.data.Form;
-import play.data.FormFactory;
 import play.libs.Json;
 import play.mvc.Controller;
 import play.mvc.Http;
@@ -23,38 +22,28 @@ public class OrderController extends Controller {
     private OrderAddressService orderAddressService;
     private OrderItemService orderItemService;
     private OrderNatsSender orderNatsSender;
-    private FormFactory formFactory;
+
 
     @Inject
-    private void initialize(OrderService orderService, OrderAddressService orderAddressService, OrderItemService orderItemService, OrderNatsSender orderNatsSender, FormFactory formFactory) {
+    private void initialize(OrderService orderService, OrderAddressService orderAddressService, OrderItemService orderItemService, OrderNatsSender orderNatsSender) {
         this.orderService = orderService;
         this.orderAddressService = orderAddressService;
         this.orderItemService = orderItemService;
         this.orderNatsSender = orderNatsSender;
-        this.formFactory = formFactory;
     }
 
     @RoleSecured({"ROLE_USER"})
     public Result provideMyAddress(Http.Request request) {
-        JsonNode customer = orderNatsSender.retrieveCustomer(extractJwtToken(request));
-        JsonNode customerData = customer.get("customer");
+        String jwtToken = TokenUtils.provideToken(request);
+        JsonNode customerData = orderNatsSender.retrieveCurrentCustomer(jwtToken);
         Integer addressId = customerData.get("shippingAddressId").asInt();
-        JsonNode address = orderNatsSender.retrieveShippingAddress(addressId, extractJwtToken(request));
+        JsonNode address = orderNatsSender.retrieveAddress(addressId,jwtToken);
         return ok(Json.toJson(address));
     }
 
     @RoleSecured({"ROLE_USER"})
     public Result confirmShipping(Http.Request request) {
-        String jwtToken = extractJwtToken(request);
-        /*
-        Form<JsonNode> form = formFactory.form(JsonNode.class).bindFromRequest(request);
-        if (form.hasErrors()) {
-            throw new DataNotValidatedException("Product data is not valid!");
-        }
-
-        JsonNode address = form.get();
-
-         */
+        String jwtToken = TokenUtils.provideToken(request);
 
         JsonNode addressData = request.body().asJson();
         if (addressData == null || !addressData.has("address") || !addressData.has("city")) {
@@ -62,12 +51,11 @@ public class OrderController extends Controller {
         }
 
         // Dohvati korisnika i adresu
-        JsonNode customer = orderNatsSender.retrieveCustomer(jwtToken);
-        JsonNode customerNode = customer.get("customer"); // Prvo dohvatamo customer objekat
-        int addressId = customerNode.get("shippingAddressId").asInt(); // Sada uzimamo shippingAddressId
+        JsonNode customerData = orderNatsSender.retrieveCurrentCustomer(jwtToken);
+        int addressId = customerData.get("shippingAddressId").asInt(); // Sada uzimamo shippingAddressId
 
         // Ažuriraj adresu preko NATS-a
-        JsonNode updatedAddress = orderNatsSender.updateShippingAddress(addressId, addressData, jwtToken);
+        JsonNode updatedAddress = orderNatsSender.updateShippingAddress(addressData,addressId,jwtToken);
 
         return ok(Json.toJson(updatedAddress));
     }
@@ -76,7 +64,7 @@ public class OrderController extends Controller {
 
     @RoleSecured({"ROLE_USER"})
     public Result placeOrder(Http.Request request) {
-        orderService.addOrder(request);
+        orderService.addOrder(TokenUtils.provideToken(request));
         return ok("Your order has been submitted without any problems!");
     }
 
@@ -106,10 +94,6 @@ public class OrderController extends Controller {
         return ok("The order with id " + orderId + " has been permanently deleted!");
     }
 
-    private String extractJwtToken(Http.Request request) {
-        return request.header("Authorization")
-                .map(header -> header.replace("Bearer ", "").trim())
-                .orElseThrow(() -> new RuntimeException("Missing authorization token"));
-    }
+
 
 }

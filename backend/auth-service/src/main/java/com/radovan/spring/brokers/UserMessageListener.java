@@ -15,13 +15,14 @@ import io.nats.client.impl.Headers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 @Component
@@ -34,8 +35,13 @@ public class UserMessageListener {
 	private DeserializeConverter deserializeConverter;
 
 	@Autowired
-	private void initialize(NatsUtils natsUtils, UserService userService, ObjectMapper objectMapper, JwtUtil jwtUtil,
-			DeserializeConverter deserializeConverter) {
+	public void initialize(
+			NatsUtils natsUtils,
+			UserService userService,
+			ObjectMapper objectMapper,
+			JwtUtil jwtUtil,
+			DeserializeConverter deserializeConverter
+	) {
 		this.natsUtils = natsUtils;
 		this.userService = userService;
 		this.objectMapper = objectMapper;
@@ -51,29 +57,28 @@ public class UserMessageListener {
 		dispatcher.subscribe("user.create");
 		dispatcher.subscribe("user.suspend.*");
 		dispatcher.subscribe("user.reactivate.*");
+		dispatcher.subscribe("user.getById.*");
 	}
 
 	private void handleMessage(Message msg) {
 		try {
-			switch (msg.getSubject()) {
-			case "user.get":
+			String subject = msg.getSubject();
+			if ("user.get".equals(subject)) {
 				handleUserGet(msg);
-				break;
-			case "user.create":
+			} else if ("user.create".equals(subject)) {
 				handleUserCreate(msg);
-				break;
-			default:
-				if (msg.getSubject().startsWith("user.delete.")) {
-					handleUserDelete(msg);
-				} else if (msg.getSubject().startsWith("user.suspend.")) {
-					handleUserSuspend(msg);
-				} else if (msg.getSubject().startsWith("user.reactivate.")) {
-					handleUserReactivate(msg);
-				}
-				break;
+			} else if (subject.startsWith("user.getById.")) {
+				handleUserGetById(msg);
+			} else if (subject.startsWith("user.delete.")) {
+				handleUserDelete(msg);
+			} else if (subject.startsWith("user.suspend.")) {
+				handleUserSuspend(msg);
+			} else if (subject.startsWith("user.reactivate.")) {
+				handleUserReactivate(msg);
 			}
+			// ignore unknown subjects
 		} catch (Exception e) {
-			sendErrorResponse(getReplyTo(msg), "Internal server error", HttpStatus.INTERNAL_SERVER_ERROR);
+			sendErrorResponse(msg, "Internal server error", HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
 
@@ -84,7 +89,7 @@ public class UserMessageListener {
 
 		UserDto currentUser = userService.getCurrentUser();
 		if (currentUser.getEnabled() == 0) {
-			sendErrorResponse(msg.getReplyTo(), "Account suspended", HttpStatus.UNAVAILABLE_FOR_LEGAL_REASONS);
+			sendErrorResponse(msg, "Account suspended", HttpStatus.UNAVAILABLE_FOR_LEGAL_REASONS);
 			return;
 		}
 
@@ -93,18 +98,23 @@ public class UserMessageListener {
 
 	private void handleUserCreate(Message msg) {
 		try {
-			UserDto userDto = deserializeConverter.payloadToUserDto(new String(msg.getData(), StandardCharsets.UTF_8));
+			String payload = new String(msg.getData(), StandardCharsets.UTF_8);
+			UserDto userDto = deserializeConverter.payloadToUserDto(payload);
 			UserDto createdUser = userService.addUser(userDto);
 
 			ObjectNode response = objectMapper.createObjectNode();
 			response.put("id", createdUser.getId());
 			response.put("status", HttpStatus.OK.value());
 
-			natsUtils.getConnection().publish("user.response", objectMapper.writeValueAsBytes(response));
+			String replyTo = msg.getReplyTo();
+			if (replyTo != null && !replyTo.isEmpty()) {
+				natsUtils.getConnection().publish(replyTo, objectMapper.writeValueAsBytes(response));
+			}
+
 		} catch (ExistingInstanceException e) {
-			sendErrorResponse("user.response", "Email already exists", HttpStatus.CONFLICT);
+			sendErrorResponse(msg, "Email already exists", HttpStatus.CONFLICT);
 		} catch (Exception e) {
-			sendErrorResponse("user.response", "Error creating user", HttpStatus.INTERNAL_SERVER_ERROR);
+			sendErrorResponse(msg, "Error creating user", HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
 
@@ -120,12 +130,12 @@ public class UserMessageListener {
 		processUserOperation(msg, userId -> userService.reactivateUser(userId), "User ID %d reactivated");
 	}
 
-	private void processUserOperation(Message msg, UserOperation operation, String successMessage) {
+	private void processUserOperation(Message msg, Consumer<Integer> operation, String successMessage) {
 		try {
-			Integer userId = extractUserId(msg);
+			int userId = extractUserId(msg);
 			String replyTo = getReplyTo(msg);
 
-			operation.execute(userId);
+			operation.accept(userId);
 
 			ObjectNode response = objectMapper.createObjectNode();
 			response.put("status", HttpStatus.OK.value());
@@ -133,46 +143,77 @@ public class UserMessageListener {
 
 			natsUtils.getConnection().publish(replyTo, objectMapper.writeValueAsBytes(response));
 		} catch (Exception e) {
-			sendErrorResponse("user.response", "Error processing operation", HttpStatus.INTERNAL_SERVER_ERROR);
+			sendErrorResponse(msg, "Error processing operation", HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+	}
+
+	private void handleUserGetById(Message msg) {
+		try {
+			String subject = msg.getSubject();
+			int userId = Integer.parseInt(subject.replace("user.getById.", ""));
+
+			UserDto user = userService.getUserById(userId);
+			if (user != null) {
+				if (user.getEnabled() == 0) {
+					sendErrorResponse(msg, "Account suspended", HttpStatus.UNAVAILABLE_FOR_LEGAL_REASONS);
+				} else {
+					natsUtils.getConnection().publish(msg.getReplyTo(), objectMapper.writeValueAsBytes(user));
+				}
+			} else {
+				sendErrorResponse(msg, "User ID " + userId + " not found", HttpStatus.NOT_FOUND);
+			}
+		} catch (Exception e) {
+			sendErrorResponse(msg, "Error fetching user by ID", HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
 
 	private void authenticateUser(String token) {
 		String userId = jwtUtil.extractUsername(token);
-		List<GrantedAuthority> authorities = jwtUtil.extractRoles(token).stream().map(SimpleGrantedAuthority::new)
-				.collect(Collectors.toUnmodifiableList());
+		List<String> roles = jwtUtil.extractRoles(token);
 
-		SecurityContextHolder.getContext()
-				.setAuthentication(new UsernamePasswordAuthenticationToken(userId, token, authorities));
+		List<SimpleGrantedAuthority> authorities = roles.stream()
+				.map(SimpleGrantedAuthority::new)
+				.collect(Collectors.toList());
+
+		UsernamePasswordAuthenticationToken authentication =
+				new UsernamePasswordAuthenticationToken(userId, token, authorities);
+		SecurityContextHolder.getContext().setAuthentication(authentication);
 	}
 
-	private void sendErrorResponse(String replyTo, String message, HttpStatus status) {
-		if (replyTo == null || replyTo.isEmpty())
+	private void sendErrorResponse(Message msg, String message, HttpStatus status) {
+		String replyTo = msg.getReplyTo();
+		if (replyTo == null || replyTo.isEmpty()) {
 			return;
+		}
 
 		try {
 			ObjectNode errorNode = objectMapper.createObjectNode();
 			errorNode.put("status", status.value());
 			errorNode.put("message", message);
+
 			natsUtils.getConnection().publish(replyTo, objectMapper.writeValueAsBytes(errorNode));
-		} catch (Exception ignored) {
+		} catch (Exception e) {
+			// ignore exceptions while sending error
 		}
 	}
 
-	private Integer extractUserId(Message msg) {
-		return Integer.parseInt(msg.getSubject().replaceAll("user.(delete|suspend|reactivate)\\.", ""));
+	private int extractUserId(Message msg) {
+		String subject = msg.getSubject();
+		String userIdStr = subject.replaceAll("user.(delete|suspend|reactivate)\\.", "");
+		return Integer.parseInt(userIdStr);
 	}
 
 	private String getReplyTo(Message msg) {
 		Headers headers = msg.getHeaders();
 		String replyTo = msg.getReplyTo();
-		return (replyTo == null || replyTo.isEmpty())
-				? (headers != null ? headers.getFirst("Nats-Reply-To") : "user.response")
-				: replyTo;
-	}
 
-	@FunctionalInterface
-	private interface UserOperation {
-		void execute(Integer userId) throws Exception;
+		if (replyTo == null || replyTo.isEmpty()) {
+			if (headers != null) {
+				return headers.getFirst("Nats-Reply-To");
+			} else {
+				return "user.response";
+			}
+		}
+		return replyTo;
 	}
 }

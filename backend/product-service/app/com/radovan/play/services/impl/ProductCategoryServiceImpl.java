@@ -65,9 +65,9 @@ public class ProductCategoryServiceImpl implements ProductCategoryService {
     }
 
     @Override
-    public void deleteCategory(Integer categoryId) {
+    public void deleteCategory(Integer categoryId,String jwtToken) {
         getCategoryById(categoryId);
-        productServiceProvider.get().deleteProductsByCategoryId(categoryId);
+        productServiceProvider.get().deleteProductsByCategoryId(categoryId,jwtToken);
         categoryRepositoryProvider.get().deleteById(categoryId);
     }
 

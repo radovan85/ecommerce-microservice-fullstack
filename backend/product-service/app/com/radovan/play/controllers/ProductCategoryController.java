@@ -5,6 +5,7 @@ import com.radovan.play.exceptions.DataNotValidatedException;
 import com.radovan.play.security.JwtAuthAction;
 import com.radovan.play.security.RoleSecured;
 import com.radovan.play.services.ProductCategoryService;
+import com.radovan.play.utils.TokenUtils;
 import jakarta.inject.Inject;
 import play.data.Form;
 import play.data.FormFactory;
@@ -61,8 +62,8 @@ public class ProductCategoryController extends Controller {
     }
 
     @RoleSecured({"ROLE_ADMIN"})
-    public Result deleteCategory(Integer categoryId){
-        categoryService.deleteCategory(categoryId);
+    public Result deleteCategory(Http.Request request, Integer categoryId){
+        categoryService.deleteCategory(categoryId, TokenUtils.provideToken(request));
         return ok("The category with id " + categoryId + " has been permanently deleted!");
     }
 }

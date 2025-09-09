@@ -7,7 +7,6 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.Optional;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -25,7 +24,6 @@ import com.radovan.play.repositories.OrderRepository;
 import com.radovan.play.services.*;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
-import play.mvc.Http;
 
 @Singleton
 public class OrderServiceImpl implements OrderService {
@@ -61,7 +59,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public List<OrderDto> listAllByCartId(Integer cartId) {
-        List<OrderEntity> allOrders = orderRepository.listAllByCartId(cartId);
+        List<OrderEntity> allOrders = orderRepository.findAllByCartId(cartId);
         return allOrders.stream().map(tempConverter::orderEntityToDto).collect(Collectors.toList());
     }
 
@@ -70,13 +68,7 @@ public class OrderServiceImpl implements OrderService {
         getOrderById(orderId);
         orderRepository.deleteById(orderId);
     }
-    /*
-    @Override
-    public void deleteAllByCartId(Integer cartId) {
-        orderRepository.deleteAllByCartId(cartId);
-    }
 
-     */
 
     @Override
     public void deleteAllByCartId(Integer cartId){
@@ -85,22 +77,16 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public OrderDto addOrder(Http.Request request) {
-        // 1. Authentication
-        Optional<String> authHeader = request.header("Authorization");
-        String jwtToken = authHeader.map(header -> header.replace("Bearer ", "").trim())
-                .orElseThrow(() -> new RuntimeException("Missing authorization token"));
+    public OrderDto addOrder(String jwtToken) {
 
-        // 2. Get customer data
-        JsonNode customerResponse = orderNatsSender.retrieveCustomer(jwtToken);
-        JsonNode customer = customerResponse.get("customer");
+        JsonNode customerData = orderNatsSender.retrieveCurrentCustomer(jwtToken);
 
-        if (customer == null || !customer.has("cartId") || !customer.has("shippingAddressId")) {
+        if (customerData == null || !customerData.has("cartId") || !customerData.has("shippingAddressId")) {
             throw new RuntimeException("Customer data is missing required fields!");
         }
 
-        int cartId = customer.get("cartId").asInt();
-        int addressId = customer.get("shippingAddressId").asInt();
+        int cartId = customerData.get("cartId").asInt();
+        int addressId = customerData.get("shippingAddressId").asInt();
 
         // 3. Validate cart
         JsonNode cart = orderNatsSender.validateCart(cartId, jwtToken);
@@ -113,7 +99,7 @@ public class OrderServiceImpl implements OrderService {
         orderDto.setOrderPrice(cartPrice);
 
         // 5. Get shipping address
-        JsonNode shippingAddress = orderNatsSender.retrieveShippingAddress(addressId, jwtToken);
+        JsonNode shippingAddress = orderNatsSender.retrieveAddress(addressId, jwtToken);
         if (shippingAddress == null || !shippingAddress.has("address") || !shippingAddress.has("city")) {
             throw new RuntimeException("Shipping address data is missing required fields!");
         }
@@ -138,7 +124,7 @@ public class OrderServiceImpl implements OrderService {
 
         // 7. Process cart items
         List<OrderItemEntity> orderedItems = new ArrayList<>();
-        List<JsonNode> cartItems = orderNatsSender.retrieveCartItems(cartId, jwtToken);
+        List<JsonNode> cartItems = List.of(orderNatsSender.retrieveCartItems(cartId, jwtToken));
 
         for (JsonNode cartItem : cartItems) {
             if (!cartItem.has("productId") || !cartItem.has("quantity") || !cartItem.has("price")) {
@@ -148,7 +134,7 @@ public class OrderServiceImpl implements OrderService {
             Integer productId = cartItem.get("productId").asInt();
             Integer quantity = cartItem.get("quantity").asInt();
 
-            JsonNode productResponse = orderNatsSender.retrieveProduct(productId);
+            JsonNode productResponse = orderNatsSender.retrieveProductFromBroker(productId,jwtToken);
             if (productResponse == null || !productResponse.has("product")) {
                 throw new RuntimeException("Invalid product response structure");
             }
@@ -169,7 +155,7 @@ public class OrderServiceImpl implements OrderService {
 
             ObjectNode updatedProduct = (ObjectNode) product.deepCopy();
             updatedProduct.put("unitStock", unitStock - quantity);
-            JsonNode updateResponse = orderNatsSender.updateProduct(updatedProduct, productId);
+            JsonNode updateResponse = orderNatsSender.updateProductViaBroker(updatedProduct, productId,jwtToken);
 
             if (updateResponse != null && updateResponse.has("error")) {
                 throw new RuntimeException("Failed to update product stock");
@@ -193,8 +179,8 @@ public class OrderServiceImpl implements OrderService {
         storedOrder = orderRepository.save(storedOrder);
 
         // 12. Clean cart
-        orderNatsSender.removeAllByCartId(cartId);
-        orderNatsSender.refreshCartState(cartId);
+        orderNatsSender.removeAllByCartId(cartId,jwtToken);
+        orderNatsSender.refreshCartState(cartId,jwtToken);
 
         return tempConverter.orderEntityToDto(storedOrder);
     }
