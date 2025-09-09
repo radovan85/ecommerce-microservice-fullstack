@@ -4,9 +4,7 @@ services:
 
   # 🧭 Service Discovery
   eureka-server:
-    build:
-      context: ./backend/eureka-server-app
-      dockerfile: Dockerfile
+    image: ghcr.io/radovan85/ecommerce/eureka-server:main
     container_name: eureka-server
     ports:
       - "8761:8761"
@@ -88,9 +86,7 @@ services:
 
   # 🚪 API Gateway
   api-gateway:
-    build:
-      context: ./backend/api-gateway
-      dockerfile: Dockerfile
+    image: ghcr.io/radovan85/ecommerce/api-gateway:main
     container_name: api-gateway
     ports:
       - "8080:8080"
@@ -106,9 +102,7 @@ services:
 
   # 🔐 Auth Service
   auth-service:
-    build:
-      context: ./backend/auth-service
-      dockerfile: Dockerfile
+    image: ghcr.io/radovan85/ecommerce/auth-service:main
     container_name: auth-service
     ports:
       - "8081:8080"
@@ -133,9 +127,7 @@ services:
 
   # 👤 Customer Service
   customer-service:
-    build:
-      context: ./backend/customer-service
-      dockerfile: Dockerfile
+    image: ghcr.io/radovan85/ecommerce/customer-service:main
     container_name: customer-service
     ports:
       - "8083:8080"
@@ -160,9 +152,7 @@ services:
 
   # 🛒 Cart Service
   cart-service:
-    build:
-      context: ./backend/cart-service
-      dockerfile: Dockerfile
+    image: ghcr.io/radovan85/ecommerce/cart-service:main
     container_name: cart-service
     ports:
       - "8082:8080"
@@ -187,9 +177,7 @@ services:
 
   # 📦 Order Service (Play Framework)
   order-service:
-    build:
-      context: ./backend/order-service
-      dockerfile: Dockerfile
+    image: ghcr.io/radovan85/ecommerce/order-service:main
     container_name: order-service
     ports:
       - "9002:9000"
@@ -215,9 +203,7 @@ services:
 
   # 🛍️ Product Service (Play Framework)
   product-service:
-    build:
-      context: ./backend/product-service
-      dockerfile: Dockerfile
+    image: ghcr.io/radovan85/ecommerce/product-service:main
     container_name: product-service
     ports:
       - "9001:9000"

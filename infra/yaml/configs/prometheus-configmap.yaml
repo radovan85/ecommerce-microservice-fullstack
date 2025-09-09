@@ -20,5 +20,5 @@ data:
               - 'auth-service:8081'
               - 'cart-service:8082'
               - 'customer-service:8083'
-              - 'order-service:9000'
+              - 'order-service:9002'
               - 'product-service:9001'
